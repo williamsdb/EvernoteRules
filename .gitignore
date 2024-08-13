@@ -1,0 +1,8 @@
+.DS_Store
+composer.json
+composer.lock
+rules.db
+/src/bin
+/src/config.php
+/src/templates_c/*
+/src/vendor
