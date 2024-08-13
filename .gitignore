@@ -2,6 +2,7 @@
 composer.json
 composer.lock
 rules.db
+logs.db
 /src/bin
 /src/config.php
 /src/templates_c/*
