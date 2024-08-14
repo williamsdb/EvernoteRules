@@ -97,7 +97,7 @@ Requirements are very simple, it requires the following:
 
 1. Clone the repo:
    ```sh
-   git clone https://github.com/williamsdb/PHPCESIL.git
+   git clone https://github.com/williamsdb/EvernoteRules
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -118,7 +118,7 @@ _For more information, please refer to the [this blog post](https://www.spokenli
 
 - None
 
-See the [open issues](https://github.com/williamsdb/php2Bluesky/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/williamsdb/EvernoteRules/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

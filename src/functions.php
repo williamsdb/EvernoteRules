@@ -430,18 +430,19 @@
   
     }
   
-    function array_to_html($val) {
+    function array_to_html($val, $var=FALSE) {
         $do_nothing = true;
         $indent_size = 20;
-          $colors = array(
-              "Teal",
-              "YellowGreen",
-              "Tomato",
-              "Navy",
-              "MidnightBlue",
-              "FireBrick",
-              "DarkGreen"
-              );
+        $out = '';
+        $colors = array(
+            "Teal",
+            "YellowGreen",
+            "Tomato",
+            "Navy",
+            "MidnightBlue",
+            "FireBrick",
+            "DarkGreen"
+            );
       
           // Get string structure
           ob_start();
@@ -457,23 +458,29 @@
           foreach($array as $char) {
               if($char == "[")
                   if(!$do_nothing)
-                      echo "</div>";
+                      if ($var) { $out .= "</div>"; }else{ echo "</div>"; }
                   else $do_nothing = false;
               if($char == "[")
-                  echo "<div>";
+                  if ($var) { $out .= "<div>"; }else{ echo "<div>"; }
               if($char == ")") {
-                  echo "</div></div>";
+                  if ($var) { $out .= "</div></div>"; }else{ echo "</div></div>"; }
                   $current--;
               }
       
-              echo $char;
+              if ($var) { $out .= $char; }else{ echo $char; }
       
               if($char == "(") {
-                  echo "<div class='indent' style='padding-left: {$indent_size}px; color: ".($colors[$current % count($colors)]).";'>";
+                  if ($var){
+                    $out .= "<div class='indent' style='padding-left: {$indent_size}px; color: ".($colors[$current % count($colors)]).";'>";
+                  }else{
+                    echo "<div class='indent' style='padding-left: {$indent_size}px; color: ".($colors[$current % count($colors)]).";'>";
+                  }
                   $do_nothing = true;
                   $current++;
               }
           }
+
+          return $out;
     }
       
 ?>

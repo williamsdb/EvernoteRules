@@ -7,3 +7,4 @@ logs.db
 /src/config.php
 /src/templates_c/*
 /src/vendor
+/src/test.php

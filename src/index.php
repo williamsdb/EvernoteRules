@@ -106,108 +106,39 @@ switch ($cmd) {
 
     case 'list':
 
-//        array_to_html($_SESSION['notebooks']);
-        array_to_html($_SESSION['rules']);
+        $smarty->assign('list', array_to_html($_SESSION['rules'], TRUE));
+        $smarty->display('list.tpl');
         die;
 
         break;
 
-    case 'test':
-//        debug("test line");
-  //      die;
-/*
-        $client = new \Evernote\Client(OAUTH, FALSE);
+    case 'notebooks':
 
-        $noteGuid = 'b5063f11-772b-4ecc-ad9a-4caafc724367';
-        $client = new \Evernote\Client(OAUTH, FALSE);
-        $ret = $client->getNote($noteGuid);
-        array_to_html($ret->tagGuids);
-        array_to_html($ret);
-        $noteStore = $client->getAdvancedClient()->getNoteStore();
-        echo $ret->title.'<br>';
-        echo $ret->attributes->author.'<br>';
-//            $tags = $noteStore->getNoteTagNames($noteGuid);
-  //        array_to_html($tags);
-
-
-[0] => 208aec43-a1be-4eb9-8350-3f9a2d3d3a63
-[1] => 6ef806e0-186b-48ec-a95a-e7f2eae76f49 
-
-die;
-*/
-        $noteGuid = '3b6f31fc-b0b8-4a6c-ab22-8f09952bae12';
-        $client = new \Evernote\Client(OAUTH, FALSE);
-        $ret = $client->getNote($noteGuid);
-        //array_to_html($ret);
-        
-        echo $ret->title.'<br>';
-        echo '<xmp>'.$ret->attributes->author.'</xmp><br>';
-die;
-        $noteStore = $client->getAdvancedClient()->getNoteStore();
-
-        $newTag = new \EDAM\Types\Tag;
-        $newTag->name = 'ABCDEFGH'; // Set the desired tag name
-        
-        try {
-            $createdTag = $noteStore->createTag(OAUTH, $newTag);
-            echo "Tag created successfully. Tag GUID: " . $createdTag->guid;
-        } catch (\EDAM\Error\EDAMUserException $e) {
-            if ($e->errorCode == \EDAM\Error\EDAMErrorCode::DATA_CONFLICT) {
-                echo "A tag with this name already exists.";
-            } else {
-                echo "An error occurred: " . $e->getMessage();
-            }
-        } catch (\Exception $e) {
-            echo "An error occurred: " . $e->getMessage();
-        }
-die;
-
-        $tagsToAdd = ['6ef806e0-186b-48ec-a95a-e7f2eae76f49', '208aec43-a1be-4eb9-8350-3f9a2d3d3a63'];
-        $tagsToAdd=[];
-        $tags = getTags($noteStore);
-        $tag = findGuidByName($tags, 'Neil');
-        echo $tag.'<br>';
-        array_push($tagsToAdd, $tag);
-        $tag = findGuidByName($tags, 'Neil David Thompson');
-        echo $tag.'<br>';
-        array_push($tagsToAdd, $tag);
-        array_to_html($tagsToAdd);
+        $smarty->assign('notebooks', array_to_html($_SESSION['notebooks'], TRUE));
+        $smarty->display('notebooks.tpl');
         die;
-        try {
-            $ret = $client->getNote($noteGuid);
-            echo $ret->title.'<br>';
-            echo $ret->attributes->author.'<br>';
-//            $tags = $noteStore->getNoteTagNames($noteGuid);
-  //          array_to_html($tags);
 
-            $new_contents = str_replace("FW: ", "", $ret->title);
+        break;
 
+    case 'log':
 
-            $edamNote = $ret->getEdamNote();
-            $edamNote->title = $new_contents;
-
-//            array_to_html($edamNote);
-//die;        
-            // Update the note on the server
-        $noteStore = $client->getAdvancedClient()->getNoteStore();
-        $updatedNote = $noteStore->updateNote(OAUTH, $edamNote);
-
-        $tagsToAdd = ['6ef806e0-186b-48ec-a95a-e7f2eae76f49', '208aec43-a1be-4eb9-8350-3f9a2d3d3a63'];
-
-        // Merge existing tags with new tags
-        $edamNote->tagGuids = array_merge($edamNote->tagGuids, $tagsToAdd);
-
-        // Remove duplicates by converting to array keys and back
-        $edamNote->tagGuids = array_values(array_unique($edamNote->tagGuids));
-        $updatedNote = $noteStore->updateNote(OAUTH, $edamNote);
-//        array_to_html($edamNote);
-        die;        
-              
-            echo "Note updated successfully! New title: " . $updatedNote->title;
-        } catch (Exception $e) {
-            echo 'Error updating note: ',  $e->getMessage(), "\n";
+        $log = file_get_contents("./logs.db");
+        $logarr = explode("\n", $log);
+        $log = [];
+        $i = count($logarr);
+        $j = 0;
+        while ($i >= 0){
+            if (!empty($logarr[$i])){
+                $t = explode(",", $logarr[$i]);
+                $log[$j]['date'] = $t[0];
+                $log[$j]['entry'] = trim($t[1], "\"");    
+                $j++;
+            }
+            $i--;
         }
 
+        $smarty->assign('log', $log);
+        $smarty->display('log.tpl');
         die;
 
         break;
