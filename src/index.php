@@ -104,7 +104,7 @@ switch ($cmd) {
 
         break;
 
-    case 'list':
+    case 'database':
 
         $smarty->assign('list', array_to_html($_SESSION['rules'], TRUE));
         $smarty->display('list.tpl');
@@ -120,6 +120,14 @@ switch ($cmd) {
 
         break;
 
+    case 'clearcache':
+
+        session_destroy();
+		Header('Location: /');
+        die;
+
+        break;
+
     case 'log':
 
         $log = file_get_contents("./logs.db");
@@ -127,7 +135,7 @@ switch ($cmd) {
         $log = [];
         $i = count($logarr);
         $j = 0;
-        while ($i >= 0){
+        while ($i >= 0 && $j <= 100){
             if (!empty($logarr[$i])){
                 $t = explode(",", $logarr[$i]);
                 $log[$j]['date'] = $t[0];
