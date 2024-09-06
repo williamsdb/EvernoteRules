@@ -17,13 +17,20 @@
  *
  */
 
+// turn off reporting of notices
+error_reporting(0);
+ini_set('display_errors', 0);
 
 // session start
 session_start();
 
 // Load Composer & parameters
 require 'vendor/autoload.php';
-require 'config.php';
+try {
+    require 'config.php';
+} catch (\Throwable $th) {
+    die('config.php file not found. Have you renamed from config_dummy.php?');
+}
 require 'functions.php';
 
 // set up Smarty
@@ -36,10 +43,6 @@ $smarty->setCompileDir('templates_c');
 $smarty->setCacheDir('cache');
 $smarty->setConfigDir('configs');
 $smarty->use_sub_folders = TRUE;
-
-// turn off reporting of notices
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 // load up the list of notebooks
 if (empty($_SESSION['notebooks']) && OAUTH != '') {
@@ -326,8 +329,20 @@ switch ($cmd) {
 
     case 'webhook':
 
+        // does this have the required payload and is it for us?
+        if (empty($_REQUEST) || (!empty(USER) && $_REQUEST['userId']!= USER)) die;
+
         // get the reason we are being polled
         $reason = $_REQUEST['reason'];
+
+        if (DEBUG == 2){
+            $filename = date('Ymd_Hisu') . '.txt';
+            $r=print_r($_REQUEST,TRUE);
+            $ipAddress = $_SERVER['REMOTE_ADDR'];
+            $h = print_r($_SERVER,TRUE);
+            file_put_contents('hooks/'.$filename, $ipAddress.PHP_EOL.PHP_EOL.$h.PHP_EOL.PHP_EOL.$r);
+            pushover('Webhook triggered from '.$ipAddress, PUSHOVER_TOKEN, PUSHOVER_USER);    
+        }
         
         // action depending on the event type
         switch($reason)

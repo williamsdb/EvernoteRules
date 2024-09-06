@@ -1,6 +1,10 @@
 <?php
 
     function pushover($message, $token, $user) {
+
+        // only bother if Pushover details set in config
+        if (empty($token) || empty($user)) die;
+
         // Send to PushOver
         curl_setopt_array($ch = curl_init(), array(
             CURLOPT_URL => "https://api.pushover.net/1/messages.json",
@@ -160,13 +164,21 @@
 
     function readRules() {
         // Read the rules database
-        $rules = file_get_contents('./rules.db');
+        try {
+            $rules = file_get_contents('./rules.db');
+        } catch (\Throwable $th) {
+            die('rules.db file not found. Have you created it?');
+        }
         return unserialize($rules);
     }
 
     function writeRules($rules) {
         // write the rules to the database file
-        file_put_contents('./rules.db',serialize($rules));
+        try {
+            file_put_contents('./rules.db',serialize($rules));
+        } catch (\Throwable $th) {
+            die('rules.db file not found. Have you created it?');
+        }
     }
 
     function checkTitleCondition($title,  $condition, $conditionText){
@@ -366,10 +378,14 @@
     // log calls
     function debug($string){
 
-        if (!DEBUG) return;
+        if (DEBUG == 0) return;
 
         // write the rules to the database file
-        file_put_contents('./logs.db', date("Y-m-d H:i:s").','.'"'.$string.'"'.PHP_EOL, FILE_APPEND);
+        try {
+            file_put_contents('./logs.db', date("Y-m-d H:i:s").','.'"'.$string.'"'.PHP_EOL, FILE_APPEND);
+        } catch (\Throwable $th) {
+            die('logs.db file not found. Have you created it?');
+        }
 
     }
 

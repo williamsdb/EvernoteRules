@@ -75,14 +75,14 @@ One final word of warning - this comes with absolutely no warranty whatsoever. H
 Running the script is very straightforward:
 
 1. download the code/clone the repository
-2. install [composer] (https://getcomposer.org/)
+2. install [composer](https://getcomposer.org/)
 3. add the Evernote SDK (evernote-cloud-sdk-php) and smarty templating engine
 
     > composer.phar require evernote/evernote-cloud-sdk-php
     
     > composer.phar require smarty/smarty
 
-4. update the SDK using the [details here] (https://github.com/Evernote/evernote-cloud-sdk-php/issues/45)
+4. update the SDK using the [details here](https://github.com/Evernote/evernote-cloud-sdk-php/issues/45)
 
 You can read more about how it all works in [this blog post](https://www.spokenlikeageek.com/2024/07/12/computer-education-in-schools-instruction-language-cesil/).
 
