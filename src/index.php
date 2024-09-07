@@ -341,7 +341,7 @@ switch ($cmd) {
             $ipAddress = $_SERVER['REMOTE_ADDR'];
             $h = print_r($_SERVER,TRUE);
             file_put_contents('hooks/'.$filename, $ipAddress.PHP_EOL.PHP_EOL.$h.PHP_EOL.PHP_EOL.$r);
-            pushover('Webhook triggered from '.$ipAddress, PUSHOVER_TOKEN, PUSHOVER_USER);    
+            //pushover('Webhook triggered from '.$ipAddress, PUSHOVER_TOKEN, PUSHOVER_USER);    
         }
         
         // action depending on the event type
