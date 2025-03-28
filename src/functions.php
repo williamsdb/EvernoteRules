@@ -49,14 +49,24 @@ function getNotebooks($smarty, $webhook = TRUE)
 
     $notebooks = array();
     try {
-
         // Process the list of notebooks
         $notebooks = $client->listNotebooks();
-    } catch (EDAMUserException $e) {
 
+        // Check if $notebooks is empty
+        if (empty($notebooks)) {
+            if ($webhook) {
+                debug('getNotebooks - No notebooks found.');
+            } else {
+                $smarty->assign('error', 'No notebooks found in your account.');
+                $smarty->assign('oauth', OAUTH);
+                $smarty->display('home.tpl');
+            }
+            die;
+        }
+    } catch (EDAMUserException $e) {
         if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
             if ($webhook) {
-                debug('Token has expired. getNotebooks 1');
+                debug('getNotebooks - Token has expired.');
             } else {
                 $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
                 $smarty->assign('oauth', OAUTH);
@@ -64,9 +74,8 @@ function getNotebooks($smarty, $webhook = TRUE)
             }
             die;
         } else {
-            // Handle other exceptions
             if ($webhook) {
-                debug('An error occurred: ' . $e->getMessage());
+                debug('getNotebooks - An error occurred: ' . $e->getMessage());
             } else {
                 $smarty->assign('error', 'An error occurred: ' . $e->getMessage());
                 $smarty->assign('oauth', OAUTH);
@@ -74,22 +83,39 @@ function getNotebooks($smarty, $webhook = TRUE)
             }
             die;
         }
-    }
-
-    if (empty($notebooks)) {
+    } catch (EDAMSystemException $e) {
         if ($webhook) {
-            debug('No notebooks found.');
+            debug('getNotebooks - System error: ' . $e->getMessage());
         } else {
-            $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
+            $smarty->assign('error', 'System error: ' . $e->getMessage());
             $smarty->assign('oauth', OAUTH);
             $smarty->display('home.tpl');
         }
         die;
-    } else {
-
-        foreach ($notebooks as $notebook) {
-            $result[] = array("guid" => $notebook->guid, "name" => $notebook->name);
+    } catch (EDAMNotFoundException $e) {
+        if ($webhook) {
+            debug('getNotebooks - Requested resource not found: ' . $e->getMessage());
+        } else {
+            $smarty->assign('error', 'Requested resource not found: ' . $e->getMessage());
+            $smarty->assign('oauth', OAUTH);
+            $smarty->display('home.tpl');
         }
+        die;
+    } catch (Exception $e) {
+        // Catch any other unexpected exceptions
+        if ($webhook) {
+            debug('getNotebooks - Unexpected error: ' . $e->getMessage());
+        } else {
+            $smarty->assign('error', 'Unexpected error: ' . $e->getMessage());
+            $smarty->assign('oauth', OAUTH);
+            $smarty->display('home.tpl');
+        }
+        die;
+    }
+
+    // format the returned list of notebooks
+    foreach ($notebooks as $notebook) {
+        $result[] = array("guid" => $notebook->guid, "name" => $notebook->name);
     }
 
     usort($result, 'compareByName');
