@@ -20,6 +20,7 @@
 // turn off reporting of notices
 error_reporting(0);
 ini_set('display_errors', 0);
+$errdate = date('Ymd_His');
 
 // session start
 session_start();
@@ -33,6 +34,11 @@ try {
 }
 require 'functions.php';
 
+// debug incoming request
+if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+    file_put_contents('requests.log', $errdate . ',pre - uri=' . $_SERVER['REQUEST_URI'] . PHP_EOL, FILE_APPEND);
+}
+
 // set up Smarty
 use Smarty\Smarty;
 
@@ -42,11 +48,15 @@ $smarty->setTemplateDir('templates');
 $smarty->setCompileDir('templates_c');
 $smarty->setCacheDir('cache');
 $smarty->setConfigDir('configs');
-$smarty->use_sub_folders = TRUE;
+//$smarty->use_sub_folders = TRUE;
 
 // load up the list of notebooks
 if (empty($_SESSION['notebooks']) && OAUTH != '') {
-    $_SESSION['notebooks'] = getNotebooks($smarty);
+    if (str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+        $_SESSION['notebooks'] = getNotebooks($smarty, TRUE);
+    } else {
+        $_SESSION['notebooks'] = getNotebooks($smarty, FALSE);
+    }
 }
 
 // get the existing rules
@@ -71,11 +81,20 @@ $path_segments = explode('/', $trimmed_path);
 
 // Get the first segment, which is the command, followed by the rule id and then the action id
 $cmd = $path_segments[0];
-if (isset($path_segments[1])){
+if (isset($path_segments[1])) {
     $id = $path_segments[1];
+} else {
+    $id = '';
 }
-if (isset($path_segments[2])){
+if (isset($path_segments[2])) {
     $act = $path_segments[2];
+} else {
+    $act = '';
+}
+
+// debug incoming request
+if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+    file_put_contents('requests.log', $errdate . ',pre - cmd=' . $cmd . ' id=' . $id . ' act=' . $act . PHP_EOL, FILE_APPEND);
 }
 
 // execute command
@@ -126,7 +145,7 @@ switch ($cmd) {
     case 'clearcache':
 
         session_destroy();
-		Header('Location: /');
+        Header('Location: /');
         die;
 
         break;
@@ -138,11 +157,11 @@ switch ($cmd) {
         $log = [];
         $i = count($logarr);
         $j = 0;
-        while ($i >= 0 && $j <= 100){
-            if (!empty($logarr[$i])){
+        while ($i >= 0 && $j <= 100) {
+            if (!empty($logarr[$i])) {
                 $t = explode(",", $logarr[$i]);
                 $log[$j]['date'] = $t[0];
-                $log[$j]['entry'] = trim($t[1], "\"");    
+                $log[$j]['entry'] = trim($t[1], "\"");
                 $j++;
             }
             $i--;
@@ -174,8 +193,7 @@ switch ($cmd) {
             $_SESSION['rules'][0]['notebookName'] = $notebookName;
             $_SESSION['rules'][0]['tags'] = $_REQUEST['tags'];
             $_SESSION['rules'][0]['actions'] = array();
-
-        }else{
+        } else {
             $i = count($_SESSION['rules']);
             $_SESSION['rules'][$i]['ruleName'] = $_REQUEST['ruleName'];
             $_SESSION['rules'][$i]['type'] = $_REQUEST['type'];
@@ -191,11 +209,11 @@ switch ($cmd) {
 
         // store the rules in the rules database file
         writeRules($_SESSION['rules']);
-        $i = count($_SESSION['rules'])-1;
+        $i = count($_SESSION['rules']) - 1;
 
         // Redirect to the relevant page
         $_SESSION['error'] = 'Rule created';
-		Header('Location: /editRule/'.$i);
+        Header('Location: /editRule/' . $i);
 
         break;
 
@@ -247,7 +265,7 @@ switch ($cmd) {
 
         // Redirect to the relevant page
         $_SESSION['error'] = 'Rule updated';
-		Header('Location: /editRule/'.$id);
+        Header('Location: /editRule/' . $id);
 
         break;
 
@@ -271,11 +289,11 @@ switch ($cmd) {
 
         // store the rules in the rules database file
         writeRules($_SESSION['rules']);
-        $i = count($_SESSION['rules'])-1;
+        $i = count($_SESSION['rules']) - 1;
 
         // Redirect to the relevant page
         $_SESSION['error'] = 'Action created';
-		Header('Location: /editRule/'.$i);
+        Header('Location: /editRule/' . $i);
 
         break;
 
@@ -304,7 +322,7 @@ switch ($cmd) {
 
         // Redirect to the relevant page
         $_SESSION['error'] = 'Action deleted';
-		Header('Location: /editRule/'.$id);
+        Header('Location: /editRule/' . $id);
 
         break;
 
@@ -323,30 +341,35 @@ switch ($cmd) {
 
         // Redirect to the relevant page
         $_SESSION['error'] = 'Action updated';
-		Header('Location: /editRule/'.$id);
+        Header('Location: /editRule/' . $id);
 
         break;
 
     case 'webhook':
 
+        // debug incoming request
+        if (DEBUG == 2) {
+            file_put_contents('requests.log', $errdate . ',webhook - ' . $_SERVER['REQUEST_URI'] . PHP_EOL, FILE_APPEND);
+        }
+
         // does this have the required payload and is it for us?
-        if (empty($_REQUEST) || (!empty(USER) && $_REQUEST['userId']!= USER)) die;
+        if (empty($_REQUEST) || (!empty(USER) && $_REQUEST['userId'] != USER)) die;
 
         // get the reason we are being polled
         $reason = $_REQUEST['reason'];
 
-        if (DEBUG == 2){
+        if (DEBUG == 2) {
             $filename = date('Ymd_Hisu') . '.txt';
-            $r=print_r($_REQUEST,TRUE);
+            $r = print_r($_REQUEST, TRUE);
             $ipAddress = $_SERVER['REMOTE_ADDR'];
-            $h = print_r($_SERVER,TRUE);
-            file_put_contents('hooks/'.$filename, $ipAddress.PHP_EOL.PHP_EOL.$h.PHP_EOL.PHP_EOL.$r);
+            $h = print_r($_SERVER, TRUE);
+            file_put_contents('requests.log', $errdate . ',reason - ' . $reason . PHP_EOL, FILE_APPEND);
+            file_put_contents('hooks/' . $filename, $ipAddress . PHP_EOL . PHP_EOL . $h . PHP_EOL . PHP_EOL . $r);
             //pushover('Webhook triggered from '.$ipAddress, PUSHOVER_TOKEN, PUSHOVER_USER);    
         }
-        
+
         // action depending on the event type
-        switch($reason)
-        {
+        switch ($reason) {
 
             // Create Notebook
             // [base URL]/?userId=[user ID]&notebookGuid=[notebook GUID]&reason=notebook_create
@@ -354,7 +377,7 @@ switch ($cmd) {
 
                 // not interested so discard
 
-            break;
+                break;
 
             // Update Notebook
             // [base URL]/?userId=[user ID]&notebookGuid=[notebook GUID]&reason=notebook_update
@@ -362,7 +385,7 @@ switch ($cmd) {
 
                 // not interested so discard
 
-            break;
+                break;
 
             // Update or Create Note
             // [base URL]/?userId=[user ID]&guid=[note GUID]&notebookGuid=[notebook GUID]&reason=create
@@ -374,11 +397,23 @@ switch ($cmd) {
                 $noteGuid = $_REQUEST['guid'];
                 $notebookGuid = $_REQUEST['notebookGuid'];
 
+                // debug incoming request
+                if (DEBUG == 2) {
+                    file_put_contents('requests.log', $errdate . ',webhook 1 - user=' . $userId . ' noteGuid=' . $noteGuid . ' notebookGuid=' . $notebookGuid . PHP_EOL, FILE_APPEND);
+                }
+
                 // cycle through the rules finding any matches.
                 $i = 0;
-                while ($i <= count($_SESSION['rules'])-1) {
+                while ($i <= count($_SESSION['rules']) - 1) {
                     if ((($_SESSION['rules'][$i]['type'] == 'Created' && $reason == 'create') || ($_SESSION['rules'][$i]['type'] == 'Updated' && $reason == 'update')) &&
-                         ($_SESSION['rules'][$i]['notebookGuid'] == $notebookGuid || $_SESSION['rules'][$i]['notebookGuid'] =='')){
+                        ($_SESSION['rules'][$i]['notebookGuid'] == $notebookGuid || $_SESSION['rules'][$i]['notebookGuid'] == '')
+                    ) {
+
+                        // debug incoming request
+                        if (DEBUG == 2) {
+                            file_put_contents('requests.log', $errdate . ',webhook 2 - match' . PHP_EOL, FILE_APPEND);
+                        }
+
                         // we have a note that matches so get the details
                         $client = new \Evernote\Client(OAUTH, FALSE);
                         $noteStore = $client->getAdvancedClient()->getNoteStore();
@@ -387,21 +422,37 @@ switch ($cmd) {
                         $author = $note->attributes->author;
                         $tags = $noteStore->getNoteTagNames($noteGuid);
 
+                        // debug incoming request
+                        if (DEBUG == 2) {
+                            file_put_contents('requests.log', $errdate . ',webhook 3 - title=' . $title . ' author=' . $author . PHP_EOL, FILE_APPEND);
+                        }
+
                         // does this note meet all the conditions?
                         $titleRes = checkTitleCondition($title,  $_SESSION['rules'][$i]['condition'], $_SESSION['rules'][$i]['conditionText']);
                         $authorRes = checkAuthorCondition($author, $_SESSION['rules'][$i]['authorText']);
                         $tagRes = checkTagCondition($tags, $_SESSION['rules'][$i]['tags']);
 
+                        // debug incoming request
+                        if (DEBUG == 2) {
+                            file_put_contents('requests.log', $errdate . ',webhook 4 - titleRes=' . $titleRes . ' authorRes=' . $authorRes . ' tagRes=' . $tagRes . PHP_EOL, FILE_APPEND);
+                        }
+
                         // do we need to take action?
-                        if ($titleRes && $authorRes && $tagRes){
+                        if ($titleRes && $authorRes && $tagRes) {
+
+                            // debug incoming request
+                            if (DEBUG == 2) {
+                                file_put_contents('requests.log', $errdate . ',webhook 5 - process actions' . PHP_EOL, FILE_APPEND);
+                            }
+
                             // process actions
-                            processActions($_SESSION['rules'][$i]['actions'], $_SESSION['rules'][$i]['ruleName'], $title, $client, $note, $noteStore, $noteGuid);
+                            processActions($_SESSION['rules'][$i]['actions'], $_SESSION['rules'][$i]['ruleName'], $title, $client, $note, $noteStore, $noteGuid, $errdate);
                         }
                     }
                     $i++;
                 }
-        
-            break;
+
+                break;
 
             // Create Business Notebook
             //[base URL]/?userId=[user ID]&notebookGuid=[notebook GUID]&reason=business_notebook_create
@@ -409,7 +460,7 @@ switch ($cmd) {
 
                 // not interested so discard
 
-            break;
+                break;
 
             // Update Business Notebook
             //[base URL]/?userId=[user ID]&notebookGuid=[notebook GUID]&reason=business_notebook_update
@@ -417,7 +468,7 @@ switch ($cmd) {
 
                 // not interested so discard
 
-            break;
+                break;
 
             // Create Business Note
             //[base URL]/?userId=[user ID]&guid=[note GUID]&notebookGuid=[notebook GUID]&reason=business_create
@@ -425,7 +476,7 @@ switch ($cmd) {
 
                 // not interested so discard
 
-            break;
+                break;
 
             // Update Business Note
             //[base URL]/?userId=[user ID]&guid=[note GUID]&notebookGuid=[notebook GUID]&reason=business_update
@@ -433,9 +484,9 @@ switch ($cmd) {
 
                 // not interested so discard
 
-            // Unknown event type or unprocessed
+                // Unknown event type or unprocessed
             default:
-                
+
                 //do nothing for now
         }
 

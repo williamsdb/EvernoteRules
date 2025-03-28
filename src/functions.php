@@ -1,420 +1,469 @@
 <?php
 
-    function pushover($message, $token, $user) {
+function pushover($message, $token, $user)
+{
 
-        // only bother if Pushover details set in config
-        if (empty($token) || empty($user)) die;
+    // only bother if Pushover details set in config
+    if (empty($token) || empty($user)) die;
 
-        // Send to PushOver
-        curl_setopt_array($ch = curl_init(), array(
-            CURLOPT_URL => "https://api.pushover.net/1/messages.json",
-            CURLOPT_POSTFIELDS => array(
+    // Send to PushOver
+    curl_setopt_array($ch = curl_init(), array(
+        CURLOPT_URL => "https://api.pushover.net/1/messages.json",
+        CURLOPT_POSTFIELDS => array(
             "token" => $token,
             "user" => $user,
             "message" => $message,
-            ),
-        ));
-        curl_exec($ch);
-        curl_close($ch);
+        ),
+    ));
+    curl_exec($ch);
+    curl_close($ch);
 
-        return;
-    }
+    return;
+}
 
-    function write_oauth_key($oauth, $file) {
+function write_oauth_key($oauth, $file)
+{
 
-        // Read the file contents
-        $file_contents = file_get_contents($file);
+    // Read the file contents
+    $file_contents = file_get_contents($file);
 
-        // Regular expression to find the text within the double quotes
-        $pattern = '/define\("OAUTH","[^"]*"\);/';
+    // Regular expression to find the text within the double quotes
+    $pattern = '/define\("OAUTH","[^"]*"\);/';
 
-        // Replacement string
-        $replacement = 'define("OAUTH","' . $oauth . '");';
+    // Replacement string
+    $replacement = 'define("OAUTH","' . $oauth . '");';
 
-        // Replace the text
-        $new_contents = preg_replace($pattern, $replacement, $file_contents);
+    // Replace the text
+    $new_contents = preg_replace($pattern, $replacement, $file_contents);
 
-        // Write the new contents back to the file
-        file_put_contents($file, $new_contents);
+    // Write the new contents back to the file
+    file_put_contents($file, $new_contents);
 
-        return;
+    return;
+}
 
-    }
+function getNotebooks($smarty, $webhook = TRUE)
+{
 
-    function getNotebooks($smarty) {
+    $client = new \Evernote\Client(OAUTH, FALSE, null, null, FALSE);
 
-        $client = new \Evernote\Client(OAUTH, FALSE, null, null, FALSE);
+    $notebooks = array();
+    try {
 
-        $notebooks = array();
-        try {
+        // Process the list of notebooks
+        $notebooks = $client->listNotebooks();
+    } catch (EDAMUserException $e) {
 
-            // Process the list of notebooks
-            $notebooks = $client->listNotebooks();
-
-        } catch (EDAMUserException $e) {
-
-            if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
+        if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
+            if ($webhook) {
+                debug('Token has expired.');
+            } else {
                 $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
                 $smarty->assign('oauth', OAUTH);
                 $smarty->display('home.tpl');
-                die;
+            }
+            die;
+        } else {
+            // Handle other exceptions
+            if ($webhook) {
+                debug('An error occurred: ' . $e->getMessage());
             } else {
-                // Handle other exceptions
                 $smarty->assign('error', 'An error occurred: ' . $e->getMessage());
                 $smarty->assign('oauth', OAUTH);
                 $smarty->display('home.tpl');
-                die;
             }
-
+            die;
         }
-        
-        if (empty($notebooks)){
+    }
+
+    if (empty($notebooks)) {
+        if ($webhook) {
+            debug('Token has expired.');
+        } else {
+            $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
+            $smarty->assign('oauth', OAUTH);
+            $smarty->display('home.tpl');
+        }
+        die;
+    } else {
+
+        foreach ($notebooks as $notebook) {
+            $result[] = array("guid" => $notebook->guid, "name" => $notebook->name);
+        }
+    }
+
+    usort($result, 'compareByName');
+    return $result;
+}
+
+function getTags($client)
+{
+
+    $tags = array();
+    try {
+
+        // Process the list of tags
+        $tags = $client->listTags();
+    } catch (EDAMUserException $e) {
+
+        if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
             $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
             $smarty->assign('oauth', OAUTH);
             $smarty->display('home.tpl');
             die;
-        }else{
-
-            foreach ($notebooks as $notebook) {
-                $result[] = array("guid" => $notebook->guid, "name" => $notebook->name);
-            }
-
-        }
-
-        usort($result, 'compareByName');
-        return $result;
-
-    }
-
-    function getTags($client) {
-
-        $tags = array();
-        try {
-
-            // Process the list of tags
-            $tags = $client->listTags();
-
-        } catch (EDAMUserException $e) {
-
-            if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
-                $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
-                $smarty->assign('oauth', OAUTH);
-                $smarty->display('home.tpl');
-                die;
-            } else {
-                // Handle other exceptions
-                $smarty->assign('error', 'An error occurred: ' . $e->getMessage());
-                $smarty->assign('oauth', OAUTH);
-                $smarty->display('home.tpl');
-                die;
-            }
-
-        }
-        
-        if (empty($tags)){
-            $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
+        } else {
+            // Handle other exceptions
+            $smarty->assign('error', 'An error occurred: ' . $e->getMessage());
             $smarty->assign('oauth', OAUTH);
             $smarty->display('home.tpl');
             die;
-        }else{
-            foreach ($tags as $tag) {
-                $result[] = array("guid" => $tag->guid, "name" => $tag->name);
-            }
-
-        }
-
-        usort($result, 'compareByName');
-        return $result;
-
-    }
-
-    function compareByName($a, $b) {
-        return strcmp($a['name'], $b['name']);
-    }
-
-    function findNameByGuid($array, $guid) {
-        foreach ($array as $element) {
-            if ($element['guid'] === $guid) {
-                return $element['name'];
-            }
-        }
-        // Return null or an appropriate value if the guid is not found
-        return null;
-    }
-
-    function findGuidByName($array, $name) {
-        foreach ($array as $element) {
-            if ($element['name'] === $name) {
-                return $element['guid'];
-            }
-        }
-        // Return null or an appropriate value if the guid is not found
-        return null;
-    }
-
-    function startsWith($haystack, $needle) {
-        // search backwards starting from haystack length characters from the end
-        return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== FALSE;
-    }
-
-    function endsWith($haystack, $needle) {
-        // search forward starting from end minus needle length characters
-        return $needle === "" || (($temp = strlen($haystack) - strlen($needle)) >= 0 && strpos($haystack, $needle, $temp) !== FALSE);
-    }
-
-    function readRules() {
-        // Read the rules database
-        try {
-            $rules = file_get_contents('./rules.db');
-        } catch (\Throwable $th) {
-            die('rules.db file not found. Have you created it?');
-        }
-        return unserialize($rules);
-    }
-
-    function writeRules($rules) {
-        // write the rules to the database file
-        try {
-            file_put_contents('./rules.db',serialize($rules));
-        } catch (\Throwable $th) {
-            die('rules.db file not found. Have you created it?');
         }
     }
 
-    function checkTitleCondition($title,  $condition, $conditionText){
-
-        // does the title given meet the condition?
-        if ($condition == '0'){
-            return TRUE;
-        }if ($condition == '1' && $title == $conditionText){
-            return TRUE;
-        }if ($condition == '2' && str_contains($title, $conditionText)){
-            return TRUE;
-        }if ($condition == '3' && startsWith($title, $conditionText)!=''){
-            return TRUE;
-        }if ($condition == '4' && endsWith($title, $conditionText)!=''){
-            return TRUE;
+    if (empty($tags)) {
+        $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
+        $smarty->assign('oauth', OAUTH);
+        $smarty->display('home.tpl');
+        die;
+    } else {
+        foreach ($tags as $tag) {
+            $result[] = array("guid" => $tag->guid, "name" => $tag->name);
         }
+    }
 
+    usort($result, 'compareByName');
+    return $result;
+}
+
+function compareByName($a, $b)
+{
+    return strcmp($a['name'], $b['name']);
+}
+
+function findNameByGuid($array, $guid)
+{
+    foreach ($array as $element) {
+        if ($element['guid'] === $guid) {
+            return $element['name'];
+        }
+    }
+    // Return null or an appropriate value if the guid is not found
+    return null;
+}
+
+function findGuidByName($array, $name)
+{
+    foreach ($array as $element) {
+        if ($element['name'] === $name) {
+            return $element['guid'];
+        }
+    }
+    // Return null or an appropriate value if the guid is not found
+    return null;
+}
+
+function startsWith($haystack, $needle)
+{
+    // search backwards starting from haystack length characters from the end
+    return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== FALSE;
+}
+
+function endsWith($haystack, $needle)
+{
+    // search forward starting from end minus needle length characters
+    return $needle === "" || (($temp = strlen($haystack) - strlen($needle)) >= 0 && strpos($haystack, $needle, $temp) !== FALSE);
+}
+
+function readRules()
+{
+    // Read the rules database
+    try {
+        $rules = file_get_contents('./rules.db');
+    } catch (\Throwable $th) {
+        die('rules.db file not found. Have you created it?');
+    }
+    return unserialize($rules);
+}
+
+function writeRules($rules)
+{
+    // write the rules to the database file
+    try {
+        file_put_contents('./rules.db', serialize($rules));
+    } catch (\Throwable $th) {
+        die('rules.db file not found. Have you created it?');
+    }
+}
+
+function checkTitleCondition($title,  $condition, $conditionText)
+{
+
+    // does the title given meet the condition?
+    if ($condition == '0') {
+        return TRUE;
+    }
+    if ($condition == '1' && $title == $conditionText) {
+        return TRUE;
+    }
+    if ($condition == '2' && str_contains($title, $conditionText)) {
+        return TRUE;
+    }
+    if ($condition == '3' && startsWith($title, $conditionText) != '') {
+        return TRUE;
+    }
+    if ($condition == '4' && endsWith($title, $conditionText) != '') {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+function checkAuthorCondition($author, $authorText)
+{
+
+    // does the author text given meet the condition?
+    if (str_contains($author, $authorText)) return TRUE;
+
+    return FALSE;
+}
+
+function checkTagCondition($tags, $conditionTags)
+{
+
+    // we only need to check if there are condition tags and note tags
+    if ((empty($tags) && empty($conditionTags)) || (!empty($tags) && empty($conditionTags))) return TRUE;
+    if ((empty($tags) && !empty($conditionTags))) return FALSE;
+
+    // turn the comma separated list into an array
+    $condTags = explode(',', $conditionTags);
+
+    // walk through the array seeing if these tags exists on the note itself
+    $i = 0;
+    $state = 0;
+    while ($i <= count($condTags)) {
+        $j = 0;
+        while ($j <= count($tags)) {
+            if (trim($condTags[$i]) == $tags[$j]) $state++;
+            $j++;
+        }
+        $i++;
+    }
+
+    if ($state == count($condTags)) {
+        return TRUE;
+    } else {
         return FALSE;
+    }
+}
 
+function processActions($actions, $ruleName, $title, $client, $note, $noteStore, $noteGuid, $errdate)
+{
+
+    // debug incoming request
+    if (DEBUG == 2) {
+        file_put_contents('requests.log', $errdate . ',process - start' . PHP_EOL, FILE_APPEND);
     }
 
-    function checkAuthorCondition($author, $authorText){
+    // get current tags
+    $tags = getTags($noteStore);
 
-        // does the author text given meet the condition?
-        if (str_contains($author, $authorText)) return TRUE;
+    // cycle through the actions 
+    for ($i = 0; $i < count($actions); $i++) {
 
-        return FALSE;
-
-    }
-
-    function checkTagCondition($tags, $conditionTags){
-
-        // we only need to check if there are condition tags and note tags
-        if ((empty($tags) && empty($conditionTags)) || (!empty($tags) && empty($conditionTags))) return TRUE;
-        if ((empty($tags) && !empty($conditionTags))) return FALSE;
-
-        // turn the comma separated list into an array
-        $condTags = explode(',', $conditionTags);
-
-        // walk through the array seeing if these tags exists on the note itself
-        $i=0;
-        $state = 0;
-        while ($i <= count($condTags)) {
-            $j=0;
-            while ($j <= count($tags)) {
-                if (trim($condTags[$i])==$tags[$j]) $state++;
-                $j++;
-            }                
-            $i++;
+        // debug incoming request
+        if (DEBUG == 2) {
+            file_put_contents('requests.log', $errdate . ',process - action ' . $id . ' ' . $actions[$i]['option'] . PHP_EOL, FILE_APPEND);
         }
 
-        if ($state==count($condTags)){
-            return TRUE;
-        }else{
-            return FALSE;
-        }
+        // process the action
+        switch ($actions[$i]['option']) {
 
-    }
+            // move to notebook
+            case 'move':
 
-    function processActions($actions, $ruleName, $title, $client, $note, $noteStore, $noteGuid){
+                // debug incoming request
+                if (DEBUG == 2) {
+                    file_put_contents('requests.log', $errdate . ',process - move' . PHP_EOL, FILE_APPEND);
+                }
 
-        // get current tags
-        $tags = getTags($noteStore);
+                try {
+                    $notebook = new \Evernote\Model\Notebook();
+                    $notebook->guid = $actions[$i]['moveNotebookGuid'];
+                    $moved_note = $client->moveNote($note, $notebook);
 
-        // cycle through the actions 
-        for ($i = 0; $i < count($actions); $i++) {
-
-            // process the action
-            switch($actions[$i]['option']) {
-
-                // move to notebook
-                case 'move':
-
-                    try {
-                        $notebook = new \Evernote\Model\Notebook();
-                        $notebook->guid = $actions[$i]['moveNotebookGuid'];
-                        $moved_note = $client->moveNote($note, $notebook);
-
-                        debug("Note moved successfully.");
-                    } catch (Exception $e) {
-                        debug('Error moving note: '.  $e->getMessage());
-                    }
+                    debug("Note moved successfully.");
+                } catch (Exception $e) {
+                    debug('Error moving note: ' .  $e->getMessage());
+                }
 
                 // change the title
-                case 'subject':
+            case 'subject':
 
-                    // Replace the text
-                    $new_contents = str_replace($actions[$i]['subjectFind'], $actions[$i]['subjectReplace'], $title);
+                // debug incoming request
+                if (DEBUG == 2) {
+                    file_put_contents('requests.log', $errdate . ',process - subject' . PHP_EOL, FILE_APPEND);
+                }
 
-                    try {
-                        $ret = $client->getNote($noteGuid);
-                        $edamNote = $ret->getEdamNote();
-                        $edamNote->title = $new_contents;
-            
-                        // Update the note on the server
-                        $noteStore = $client->getAdvancedClient()->getNoteStore();
-                        $updatedNote = $noteStore->updateNote(OAUTH, $edamNote);
-                          
-                        debug("Note updated successfully! New title: " . $updatedNote->title);
-                    } catch (Exception $e) {
-                        debug('Error updating note: '.  $e->getMessage());
-                    }
-                                
-                    break;
+                // Replace the text
+                $new_contents = str_replace($actions[$i]['subjectFind'], $actions[$i]['subjectReplace'], $title);
 
-                // add tags
-                case 'tags':
+                try {
+                    $ret = $client->getNote($noteGuid);
+                    $edamNote = $ret->getEdamNote();
+                    $edamNote->title = $new_contents;
 
-                    // are there any tags specified?
-                    if (count($actions[$i]['tags'])==0) break;
+                    // Update the note on the server
+                    $noteStore = $client->getAdvancedClient()->getNoteStore();
+                    $updatedNote = $noteStore->updateNote(OAUTH, $edamNote);
 
-                    // cycle through the tags to format them
-                    $tagsToAdd = [];
-                    $j = 0;
-                    while ($j < count($actions[$i]['tags'])) {
+                    debug("Note updated successfully! New title: " . $updatedNote->title);
+                } catch (Exception $e) {
+                    debug('Error updating note: ' .  $e->getMessage());
+                }
 
-                        // are there any variables?
-                        $actions[$i]['tags'][$j] = parse_content_for_variables($actions[$i]['tags'][$j]);
+                break;
 
-                        // does the tag already exist, if not create
-                        $tag = findGuidByName($tags, $actions[$i]['tags'][$j]);
-                        if ($tag == ''){
-                            //create tag
-                            $newTag = new \EDAM\Types\Tag;
-                            $newTag->name = $actions[$i]['tags'][$j]; // Set the desired tag name
-                            
-                            try {
-                                $createdTag = $noteStore->createTag(OAUTH, $newTag);
-                                debug("Tag created successfully. Tag GUID: " . $createdTag->guid);
-                            } catch (\EDAM\Error\EDAMUserException $e) {
-                                if ($e->errorCode == \EDAM\Error\EDAMErrorCode::DATA_CONFLICT) {
-                                    debug("A tag with this name already exists. ".$actions[$i]['tags'][$j]);
-                                } else {
-                                    debug("An error occurred: " . $e->getMessage());
-                                }
-                            } catch (\Exception $e) {
+            // add tags
+            case 'tags':
+
+                // are there any tags specified?
+                if (count($actions[$i]['tags']) == 0) break;
+
+                // debug incoming request
+                if (DEBUG == 2) {
+                    file_put_contents('requests.log', $errdate . ',process - tags' . PHP_EOL, FILE_APPEND);
+                }
+
+                // cycle through the tags to format them
+                $tagsToAdd = [];
+                $j = 0;
+                while ($j < count($actions[$i]['tags'])) {
+
+                    // are there any variables?
+                    $actions[$i]['tags'][$j] = parse_content_for_variables($actions[$i]['tags'][$j]);
+
+                    // does the tag already exist, if not create
+                    $tag = findGuidByName($tags, $actions[$i]['tags'][$j]);
+                    if ($tag == '') {
+                        //create tag
+                        $newTag = new \EDAM\Types\Tag;
+                        $newTag->name = $actions[$i]['tags'][$j]; // Set the desired tag name
+
+                        try {
+                            $createdTag = $noteStore->createTag(OAUTH, $newTag);
+                            debug("Tag created successfully. Tag GUID: " . $createdTag->guid);
+                        } catch (\EDAM\Error\EDAMUserException $e) {
+                            if ($e->errorCode == \EDAM\Error\EDAMErrorCode::DATA_CONFLICT) {
+                                debug("A tag with this name already exists. " . $actions[$i]['tags'][$j]);
+                            } else {
                                 debug("An error occurred: " . $e->getMessage());
                             }
+                        } catch (\Exception $e) {
+                            debug("An error occurred: " . $e->getMessage());
                         }
-
-                        // Build the tag array
-                        array_push($tagsToAdd, $tag);
-
-                        $j++;
-
                     }
 
-                    // Add any tags to the note and update
-                    try {
+                    // Build the tag array
+                    array_push($tagsToAdd, $tag);
 
-                        // Get the note to be updated
-                        $ret = $client->getNote($noteGuid);
-                        $edamNote = $ret->getEdamNote();
+                    $j++;
+                }
 
-                        // Merge existing tags with new tags
-                        $edamNote->tagGuids = array_merge($edamNote->tagGuids, $tagsToAdd);
-                
-                        // Remove duplicates by converting to array keys and back
-                        $edamNote->tagGuids = array_values(array_unique($edamNote->tagGuids));
-                
-                        // Update the note on the server
-                        $updatedNote = $noteStore->updateNote(OAUTH, $edamNote);
-                        
-                        echo "Note updated successfully! New title: " . $updatedNote->title;
+                // Add any tags to the note and update
+                try {
 
-                    } catch (Exception $e) {
+                    // Get the note to be updated
+                    $ret = $client->getNote($noteGuid);
+                    $edamNote = $ret->getEdamNote();
 
-                        echo 'Error updating note: ',  $e->getMessage(), "\n";
+                    // Merge existing tags with new tags
+                    $edamNote->tagGuids = array_merge($edamNote->tagGuids, $tagsToAdd);
 
-                    }
+                    // Remove duplicates by converting to array keys and back
+                    $edamNote->tagGuids = array_values(array_unique($edamNote->tagGuids));
 
-                    break;
+                    // Update the note on the server
+                    $updatedNote = $noteStore->updateNote(OAUTH, $edamNote);
 
-                // send pushover notification
-                case 'pushover':
-                        
-                    return pushover('Rule '.$ruleName.' has just been triggered', PUSHOVER_TOKEN, PUSHOVER_USER);
-                    break;
-                    
-                // delete the note
-                case 'delete':
+                    echo "Note updated successfully! New title: " . $updatedNote->title;
+                } catch (Exception $e) {
 
-                    $client->deleteNote($note);						
-                    break;
+                    echo 'Error updating note: ',  $e->getMessage(), "\n";
+                }
 
-                // bad case
-                default:
-                    
-                    return 'Action id '.$actions[$i]['option'].' has not been recognised';
-                    break;
-            }
+                break;
 
+            // send pushover notification
+            case 'pushover':
+
+                // debug incoming request
+                if (DEBUG == 2) {
+                    file_put_contents('requests.log', $errdate . ',process - pushover' . PHP_EOL, FILE_APPEND);
+                }
+
+                return pushover('Rule ' . $ruleName . ' has just been triggered', PUSHOVER_TOKEN, PUSHOVER_USER);
+                break;
+
+            // delete the note
+            case 'delete':
+
+                // debug incoming request
+                if (DEBUG == 2) {
+                    file_put_contents('requests.log', $errdate . ',process - delete' . PHP_EOL, FILE_APPEND);
+                }
+
+                $client->deleteNote($note);
+                break;
+
+            // bad case
+            default:
+
+                return 'Action id ' . $actions[$i]['option'] . ' has not been recognised';
+                break;
         }
-
     }
+}
 
-    // log calls
-    function debug($string){
+// log calls
+function debug($string)
+{
 
-        if (DEBUG == 0) return;
+    if (DEBUG == 0) return;
 
-        // write the rules to the database file
-        try {
-            file_put_contents('./logs.db', date("Y-m-d H:i:s").','.'"'.$string.'"'.PHP_EOL, FILE_APPEND);
-        } catch (\Throwable $th) {
-            die('logs.db file not found. Have you created it?');
-        }
-
+    // write the rules to the database file
+    try {
+        file_put_contents('./logs.db', date("Y-m-d H:i:s") . ',' . '"' . $string . '"' . PHP_EOL, FILE_APPEND);
+    } catch (\Throwable $th) {
+        die('logs.db file not found. Have you created it?');
     }
+}
 
-    function parse_content_for_variables($text)
-    {
-  
-      if (strpos($text, '{') === FALSE) return $text;
-    
-      // parse the data
-      // The following are valid: {year}, {month}, {day}, {dayord}, {dow}, {date}
-  
-      // full numeric year: 2024
-      if (strpos($text, '{year}')>=0){
+function parse_content_for_variables($text)
+{
+
+    if (strpos($text, '{') === FALSE) return $text;
+
+    // parse the data
+    // The following are valid: {year}, {month}, {day}, {dayord}, {dow}, {date}
+
+    // full numeric year: 2024
+    if (strpos($text, '{year}') >= 0) {
         return str_replace('{year}', date("Y"), $text);
-      }
+    }
 
-      // full text month: January
-      if (strpos($text, '{month}')>=0){
+    // full text month: January
+    if (strpos($text, '{month}') >= 0) {
         return str_replace('{month}', date("F"), $text);
-      }
+    }
 
-      // numeric date: 27
-      if (strpos($text, '{day}')>=0){
+    // numeric date: 27
+    if (strpos($text, '{day}') >= 0) {
         return str_replace('{day}', date("d"), $text);
-      }
+    }
 
-      // numeric day with ordinal: 27th
-      if (strpos($text, '{dayord}')>=0){
-  
+    // numeric day with ordinal: 27th
+    if (strpos($text, '{dayord}') >= 0) {
+
         $num = date("d");
         $ones = $num % 10;
         $tens = floor($num / 10) % 10;
@@ -422,81 +471,101 @@
             $suff = "th";
         } else {
             switch ($ones) {
-                case 1 : $suff = "st"; break;
-                case 2 : $suff = "nd"; break;
-                case 3 : $suff = "rd"; break;
-                default : $suff = "th";
+                case 1:
+                    $suff = "st";
+                    break;
+                case 2:
+                    $suff = "nd";
+                    break;
+                case 3:
+                    $suff = "rd";
+                    break;
+                default:
+                    $suff = "th";
             }
         }
         return str_replace('{dayord}', $num . $suff, $text);
-  
-      }
+    }
 
-      // full text day of week: Wednesday
-      if (strpos($text, '{dow}')>=0){
+    // full text day of week: Wednesday
+    if (strpos($text, '{dow}') >= 0) {
         return str_replace('{dow}', date("l"), $text);
-      }
+    }
 
-      // full date: 2024-08-27
-      if (strpos($text, '{date}', 0)>=0){
+    // full date: 2024-08-27
+    if (strpos($text, '{date}', 0) >= 0) {
         return str_replace('{date}', date("Y-m-d"), $text);
-      }
-  
-      return $text;
-  
     }
-  
-    function array_to_html($val, $var=FALSE) {
-        $do_nothing = true;
-        $indent_size = 20;
-        $out = '';
-        $colors = array(
-            "Teal",
-            "YellowGreen",
-            "Tomato",
-            "Navy",
-            "MidnightBlue",
-            "FireBrick",
-            "DarkGreen"
-            );
-      
-          // Get string structure
-          ob_start();
-          print_r($val);
-          $val = ob_get_contents();
-          ob_end_clean();
-      
-          // Color counter
-          $current = 0;
-      
-          // Split the string into character array
-          $array = preg_split('//', $val, -1, PREG_SPLIT_NO_EMPTY);
-          foreach($array as $char) {
-              if($char == "[")
-                  if(!$do_nothing)
-                      if ($var) { $out .= "</div>"; }else{ echo "</div>"; }
-                  else $do_nothing = false;
-              if($char == "[")
-                  if ($var) { $out .= "<div>"; }else{ echo "<div>"; }
-              if($char == ")") {
-                  if ($var) { $out .= "</div></div>"; }else{ echo "</div></div>"; }
-                  $current--;
-              }
-      
-              if ($var) { $out .= $char; }else{ echo $char; }
-      
-              if($char == "(") {
-                  if ($var){
-                    $out .= "<div class='indent' style='padding-left: {$indent_size}px; color: ".($colors[$current % count($colors)]).";'>";
-                  }else{
-                    echo "<div class='indent' style='padding-left: {$indent_size}px; color: ".($colors[$current % count($colors)]).";'>";
-                  }
-                  $do_nothing = true;
-                  $current++;
-              }
-          }
 
-          return $out;
+    return $text;
+}
+
+function array_to_html($val, $var = FALSE)
+{
+    $do_nothing = true;
+    $indent_size = 20;
+    $out = '';
+    $colors = array(
+        "Teal",
+        "YellowGreen",
+        "Tomato",
+        "Navy",
+        "MidnightBlue",
+        "FireBrick",
+        "DarkGreen"
+    );
+
+    // Get string structure
+    ob_start();
+    print_r($val);
+    $val = ob_get_contents();
+    ob_end_clean();
+
+    // Color counter
+    $current = 0;
+
+    // Split the string into character array
+    $array = preg_split('//', $val, -1, PREG_SPLIT_NO_EMPTY);
+    foreach ($array as $char) {
+        if ($char == "[")
+            if (!$do_nothing)
+                if ($var) {
+                    $out .= "</div>";
+                } else {
+                    echo "</div>";
+                }
+            else $do_nothing = false;
+        if ($char == "[")
+            if ($var) {
+                $out .= "<div>";
+            } else {
+                echo "<div>";
+            }
+        if ($char == ")") {
+            if ($var) {
+                $out .= "</div></div>";
+            } else {
+                echo "</div></div>";
+            }
+            $current--;
+        }
+
+        if ($var) {
+            $out .= $char;
+        } else {
+            echo $char;
+        }
+
+        if ($char == "(") {
+            if ($var) {
+                $out .= "<div class='indent' style='padding-left: {$indent_size}px; color: " . ($colors[$current % count($colors)]) . ";'>";
+            } else {
+                echo "<div class='indent' style='padding-left: {$indent_size}px; color: " . ($colors[$current % count($colors)]) . ";'>";
+            }
+            $do_nothing = true;
+            $current++;
+        }
     }
-      
-?>
+
+    return $out;
+}
