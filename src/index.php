@@ -183,7 +183,11 @@ switch ($cmd) {
         while ($i >= 0 && $j <= 1000) {
             if (!empty($logarr[$i])) {
                 $t = explode(",", $logarr[$i]);
-                $log[$j]['date'] = $t[0];
+                $date = DateTime::createFromFormat("Ymd_His", $t[0]);
+
+                // Format it as "YYYY-MM-DD HH:MM:SS"
+                $formattedDate = $date->format("Y-m-d H:i:s");
+                $log[$j]['date'] = $formattedDate;
                 $log[$j]['entry'] = trim($t[1], "\"");
                 $j++;
             }

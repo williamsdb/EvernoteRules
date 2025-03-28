@@ -7,7 +7,7 @@
 <thead>
     <tr>
         <th>Date</th>
-        <th>Request</th>
+        <th>Request Entry</th>
     </tr>
 </thead>
 <tbody>
@@ -21,7 +21,7 @@
 <tfoot>
     <tr>
         <th>Date</th>
-        <th>Log Entry</th>
+        <th>Request Entry</th>
     </tr>
 </tfoot>
 </table>
