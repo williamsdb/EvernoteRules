@@ -157,7 +157,7 @@ switch ($cmd) {
         $log = [];
         $i = count($logarr);
         $j = 0;
-        while ($i >= 0 && $j <= 100) {
+        while ($i >= 0 && $j <= 1000) {
             if (!empty($logarr[$i])) {
                 $t = explode(",", $logarr[$i]);
                 $log[$j]['date'] = $t[0];

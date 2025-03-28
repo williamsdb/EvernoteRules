@@ -56,7 +56,7 @@ function getNotebooks($smarty, $webhook = TRUE)
 
         if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
             if ($webhook) {
-                debug('Token has expired.');
+                debug('Token has expired. getNotebooks 1');
             } else {
                 $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
                 $smarty->assign('oauth', OAUTH);
@@ -78,7 +78,7 @@ function getNotebooks($smarty, $webhook = TRUE)
 
     if (empty($notebooks)) {
         if ($webhook) {
-            debug('Token has expired.');
+            debug('No notebooks found.');
         } else {
             $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
             $smarty->assign('oauth', OAUTH);
@@ -107,23 +107,35 @@ function getTags($client)
     } catch (EDAMUserException $e) {
 
         if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
-            $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
-            $smarty->assign('oauth', OAUTH);
-            $smarty->display('home.tpl');
+            if ($webhook) {
+                debug('Token has expired. getTags 1');
+            } else {
+                $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
+                $smarty->assign('oauth', OAUTH);
+                $smarty->display('home.tpl');
+            }
             die;
         } else {
             // Handle other exceptions
-            $smarty->assign('error', 'An error occurred: ' . $e->getMessage());
-            $smarty->assign('oauth', OAUTH);
-            $smarty->display('home.tpl');
+            if ($webhook) {
+                debug('An error occurred: ' . $e->getMessage());
+            } else {
+                $smarty->assign('error', 'An error occurred: ' . $e->getMessage());
+                $smarty->assign('oauth', OAUTH);
+                $smarty->display('home.tpl');
+            }
             die;
         }
     }
 
     if (empty($tags)) {
-        $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
-        $smarty->assign('oauth', OAUTH);
-        $smarty->display('home.tpl');
+        if ($webhook) {
+            debug('No tags found.');
+        } else {
+            $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
+            $smarty->assign('oauth', OAUTH);
+            $smarty->display('home.tpl');
+        }
         die;
     } else {
         foreach ($tags as $tag) {
@@ -272,7 +284,7 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
 
         // debug incoming request
         if (DEBUG == 2) {
-            file_put_contents('requests.log', $errdate . ',process - action ' . $id . ' ' . $actions[$i]['option'] . PHP_EOL, FILE_APPEND);
+            file_put_contents('requests.log', $errdate . ',process - action ' . $i . ' ' . $actions[$i]['option'] . PHP_EOL, FILE_APPEND);
         }
 
         // process the action

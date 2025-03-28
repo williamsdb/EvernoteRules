@@ -8,3 +8,6 @@ logs.db
 /src/templates_c/*
 /src/vendor
 /src/test.php
+/src/requests.log
+/src/hooks/*
+/src/composer.phar
