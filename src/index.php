@@ -173,6 +173,29 @@ switch ($cmd) {
 
         break;
 
+    case 'request':
+
+        $log = file_get_contents("./requests.log");
+        $logarr = explode("\n", $log);
+        $log = [];
+        $i = count($logarr);
+        $j = 0;
+        while ($i >= 0 && $j <= 1000) {
+            if (!empty($logarr[$i])) {
+                $t = explode(",", $logarr[$i]);
+                $log[$j]['date'] = $t[0];
+                $log[$j]['entry'] = trim($t[1], "\"");
+                $j++;
+            }
+            $i--;
+        }
+
+        $smarty->assign('log', $log);
+        $smarty->display('request.tpl');
+        die;
+
+        break;
+
     case 'addRule':
 
         $smarty->assign('notebooks', $_SESSION['notebooks']);

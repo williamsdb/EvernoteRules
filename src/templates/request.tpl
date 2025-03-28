@@ -1,13 +1,13 @@
 {include file="header.tpl"}
 
-<h3>Log</h3>
+<h3>Requests</h3>
 
 <figure>
 <table style="width: 100%" id="datatableResdb" class="display nowrap" cellspacing="0" width="100%">
 <thead>
     <tr>
         <th>Date</th>
-        <th>Log Entry</th>
+        <th>Request</th>
     </tr>
 </thead>
 <tbody>
