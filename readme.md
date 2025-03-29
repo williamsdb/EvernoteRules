@@ -54,6 +54,10 @@ While I have tried to make it very simple it still requires a bit of setup and h
 
 One final word of warning - this comes with absolutely no warranty whatsoever. Here be dragons!
 
+<a href='https://ko-fi.com/Y8Y0POEES' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi5.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
+![](https://www.spokenlikeageek.com/wp-content/uploads/2024/07/2024-07-24-08-09-24.png)
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -61,7 +65,7 @@ One final word of warning - this comes with absolutely no warranty whatsoever. H
 ### Built With
 
 * [PHP](https://php.net)
-* [evernote-cloud-sdk-php] (https://github.com/Evernote/evernote-cloud-sdk-php)
+* [evernote-cloud-sdk-php](https://github.com/Evernote/evernote-cloud-sdk-php)
 * [simple.css](https://simplecss.org/)
 * [smarty](https://github.com/smarty-php/smarty)
 
@@ -72,9 +76,53 @@ One final word of warning - this comes with absolutely no warranty whatsoever. H
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Running the script is very straightforward:
+### Keys from Evernote
 
-1. download the code/clone the repository
+As implied above there are a few hoops that you have to jump through to get this working including relaying on Evernote to provide you with some necessary access.
+What you need from Evernote
+
+The code uses the Evernote SDK for PHP to manipulate your Evernote notes and to access that you need to [request an API Key](https://dev.evernote.com/doc). You will returned within a few days both a key and secret which you’ll use below.
+
+When thinking about implementing the functionality I could have periodically scanned a notebook looking for changes but this would have been hugely inefficient and Evernote asks you not to do this. Instead, you are asked to use [webhooks](https://dev.evernote.com/doc/articles/polling_notification.php#webhooks) which whenever there are any changes in a specified notebook Evernote sends a notification to a URL you provide.
+
+Register your webhook by [following the instructions here](https://dev.evernote.com/support/faq.php#activatehook). You will need to provide them your API Key obtained above, the notebook(s) that you want to monitor and the URL the webhooks should be forwarded to. This will be as follows:
+
+    https://<your domain>/webhook
+
+The Evernote FAQ on webhooks suggests that “your Webhook will be activated, typically within 5 business days” – I found that it was a lot longer than that so be prepared for a wait.
+
+### Hosting the app
+
+As I said at the beginning this requires your own API and webhook details you also have to host it yourself. As the webhook needs to accessible on the public internet you’ll need it to be hosted on a public webserver somewhere. It is written in PHP, tested on version 8.1.13, requires no database and has been tested on Linux running Apache. Other configurations should work but may need some adjustment.
+
+### Evernote SDK
+
+If you take a look at the [Evernote SDK](https://github.com/Evernote/evernote-cloud-sdk-php) you will notice that it hasn’t been updated in a very long time. The most recent commit was five years ago and most of it is nine years old. A lot has happened in that time – versions of PHP have been released, Evernote has moved from the legacy client to V10, there’s a new note database and, of course, the company has been bought.
+
+I can understand why Bending Spoons have prioritised the client over the SDK but not making any changes to it means that you will run into issues such as this:
+
+![](https://www.spokenlikeageek.com/wp-content/uploads/2024/07/GSx0fGYWQAAr2O6.png)
+
+Fortunately, some kindly soul has posted a fix to this particular issue which [you can find here](https://github.com/Evernote/evernote-cloud-sdk-php/issues/45). You MUST patch the Evernote SDK with this fix before Evernote Rules will work.
+
+It is, of course, entirely possible that you will run into other issues that I didn’t encounter. If you do let me know by [raising an issue here](https://github.com/williamsdb/EvernoteRules/issues) and I will endeavour to fix them.
+
+### Prerequisites
+
+Requirements are very simple, it requires the following:
+
+1. PHP (I tested on v8.1.13)
+2. [composer](https://getcomposer.org/)
+
+### Installation
+
+
+Here are some basic instructions to help you get up-and running:
+
+1. download the code/clone the repository:
+
+    > git clone https://github.com/williamsdb/EvernoteRules
+    
 2. install [composer](https://getcomposer.org/)
 3. add the Evernote SDK (evernote-cloud-sdk-php) and smarty templating engine
 
@@ -83,22 +131,56 @@ Running the script is very straightforward:
     > composer.phar require smarty/smarty
 
 4. update the SDK using the [details here](https://github.com/Evernote/evernote-cloud-sdk-php/issues/45)
+5. create a cache folder for the Smarty templates (templates_c) and give the web server process to write to it
+6. rename config_dummy.php to config.php and give the web server process to write to it 
+7. create three empty files: rules.db, logs.db, request.log and give them appropriate permissions
 
-You can read more about how it all works in [this blog post](https://www.spokenlikeageek.com/2024/07/12/computer-education-in-schools-instruction-language-cesil/).
+On my LAMP server I achieve this as follows:
 
-### Prerequisites
 
-Requirements are very simple, it requires the following:
+```console
+php composer.phar require smarty/smarty
+php composer.phar require evernote/evernote-cloud-sdk-php
+sudo mkdir templates_c
+sudo chown apache:apache templates_c -R
+sudo chcon -R -t httpd_sys_rw_content_t templates_c
+sudo mv config_dummy.php config.php
+sudo touch rules.db
+sudo touch logs.db
+sudo touch requests.log
+sudo chown apache:apache *.db
+sudo chown apache:apache *.log
+sudo chcon -R -t httpd_sys_rw_content_t *.db
+sudo chown apache:apache config.php
+sudo chcon -R -t httpd_sys_rw_content_t config.php
+```
 
-1. PHP (I tested on v8.1.13)
-2. [composer] (https://getcomposer.org/)
+### Set-up
 
-### Installation
+Now that you have the app installed you can configure it. Change the settings in config.php as necessary but leave the OAUTH blank as it will be completed for you when you connect to Evernote.
 
-1. Clone the repo:
-   ```sh
-   git clone https://github.com/williamsdb/EvernoteRules
-   ```
+````php	
+<?php
+ 
+    // Callback URL for OAuth (no trailing slash)
+    define("CALLBACK_URL", "https://yourdomin.com");
+ 
+    // Your Evernote api keys
+    define("KEY", "<your api comsumer key>");
+    define("SECRET", "<your api consumer secret>");
+ 
+    // Pushover keys - leave blank if not using
+    define("PUSHOVER_TOKEN", "");
+    define("PUSHOVER_USER", "");    
+ 
+    // Log calls
+    define("DEBUG", TRUE);
+ 
+    // Your oAuth token - do not enter anything here!
+    define("OAUTH","");
+ 
+?>
+````
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -156,7 +238,7 @@ Distributed under the GNU General Public License v3.0. See `LICENSE` for more in
 
 Your Name - [@spokenlikeageek](https://twitter.com/spokenlikeageek) - [Contact](https://www.spokenlikeageek.com/contact/)
 
-Project Link: [https://spokenlikeageek.com] (https://www.spokenlikeageek.com/2023/11/06/posting-to-bluesky-via-the-api-from-php-part-one/)
+Project Link: [https://spokenlikeageek.com](https://www.spokenlikeageek.com/2023/11/06/posting-to-bluesky-via-the-api-from-php-part-one/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
