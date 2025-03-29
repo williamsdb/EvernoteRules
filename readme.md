@@ -78,14 +78,13 @@ One final word of warning - this comes with absolutely no warranty whatsoever. H
 
 ### Keys from Evernote
 
-As implied above there are a few hoops that you have to jump through to get this working including relaying on Evernote to provide you with some necessary access.
-What you need from Evernote
+As implied above there are a few hoops that you have to jump through to get this working including relying on Evernote to provide you with some necessary access.
 
-The code uses the Evernote SDK for PHP to manipulate your Evernote notes and to access that you need to [request an API Key](https://dev.evernote.com/doc). You will returned within a few days both a key and secret which you’ll use below.
+The code uses the Evernote SDK for PHP to manipulate your Evernote notes and to access that you need to [request an API Key](https://dev.evernote.com/doc). You will returned within a few days both a key and secret, which you’ll use below.
 
 When thinking about implementing the functionality I could have periodically scanned a notebook looking for changes but this would have been hugely inefficient and Evernote asks you not to do this. Instead, you are asked to use [webhooks](https://dev.evernote.com/doc/articles/polling_notification.php#webhooks) which whenever there are any changes in a specified notebook Evernote sends a notification to a URL you provide.
 
-Register your webhook by [following the instructions here](https://dev.evernote.com/support/faq.php#activatehook). You will need to provide them your API Key obtained above, the notebook(s) that you want to monitor and the URL the webhooks should be forwarded to. This will be as follows:
+Register your webhook by [following the instructions here](https://dev.evernote.com/support/faq.php#activatehook). You will need to provide Evernote with your API Key obtained above, the notebook(s) that you want to monitor and the URL the webhooks should be forwarded to. This will be as follows:
 
     https://<your domain>/webhook
 
@@ -189,7 +188,49 @@ Now that you have the app installed you can configure it. Change the settings in
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-_For more information, please refer to the [this blog post](https://www.spokenlikeageek.com/2024/07/12/computer-education-in-schools-instruction-language-cesil/)_
+### Authorising
+
+The first time you load Evernote Rules you will see the following page allowing you to give it access to your Evernote account. Click the "Connect Evernote" button to get started.
+
+![](https://www.spokenlikeageek.com/wp-content/uploads/2024/08/2024-08-10-13-01-21.png)
+
+You will be taken to Evernote to authorise the access. You will see the (probably) familiar page below. Note that Pigeonhole is what I called the app when I applied for my API keys so your page will display whatever you called it. Click Authorize to grant access.
+
+![](https://www.spokenlikeageek.com/wp-content/uploads/2024/07/2024-07-18-08-40-40.png)
+
+If however, you see the following Evernote error instead:
+
+    Missing required oauth parameter "oauth_token"
+
+Then there is a possibility that the Evernote SDK is returning a 403 Forbidden code. It is not obvious from the output and I had to add tracing to the SDK to discover this. To sort this I needed to contact Evernote dev support to get them to unblock my IP address.
+
+When you load up Evernote Rules, if you have authorised Evernote, it will try and get your list of Notebooks and cache these so it will take a few seconds to load. If you find later that Notebooks are missing then try clearing the cache - see the debug section below.
+
+Evernote Rules is now configured and you can begin to create the rules and actions that will be carried out.
+
+### Rules
+
+Every time a note is created or updated in a notebook that is being monitored and you have registered for webhooks, Evernote Rules will get notified. This note will then be checked against the rules that you have created and if they match the actions you created will be applied.
+
+When you click the Add a new rule button you will be taken to the following page where you can choose the rules. 
+
+![](https://www.spokenlikeageek.com/wp-content/uploads/2024/08/2024-08-10-16-03-21.png)
+
+Give your rule a name and then choose when you want the rule to apply: when the Note is created, updated or either. 
+
+Next, choose what Notebook you want this to apply to. Here you will see a list of all your Notebooks but keep in mind that **Evernote Rules will only receive a notification for Notebooks you have registered for webooks**.
+
+Next, you can check whether the Title contains a piece of text and where that has to appear.
+
+The Author in the majority of cases with be your name and not much use but if you email in notes then the Author will be the sender of the email. For example, I automatically email in receipts from places such as Amazon. In this case, the author has more useful information which you can use in a rule. I use this to then automatically move the note to a Receipts Notebook.
+
+![](https://www.spokenlikeageek.com/wp-content/uploads/2024/08/2024-08-10-16-10-21.png)
+
+Finally, you can match on any Tags that the note might have. Obviously, this is more likely to apply to updated notes than newly created ones. The Tags entered here must be comma separated and are case sensitive so Neil is different to neil.
+
+Remember that ALL of these rules need to match for the actions to be executed.
+
+_For more information, please refer to the [this blog post](https://www.spokenlikeageek.com/2025/04/01/evernote-rules/)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -236,9 +277,15 @@ Distributed under the GNU General Public License v3.0. See `LICENSE` for more in
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@spokenlikeageek](https://twitter.com/spokenlikeageek) - [Contact](https://www.spokenlikeageek.com/contact/)
+Bluesky - [@spokenlikeageek.com](https://bsky.app/profile/spokenlikeageek.com)
 
-Project Link: [https://spokenlikeageek.com](https://www.spokenlikeageek.com/2023/11/06/posting-to-bluesky-via-the-api-from-php-part-one/)
+Mastodon - [@spokenlikeageek](https://techhub.social/@spokenlikeageek)
+
+X - [@spokenlikeageek](https://x.com/spokenlikeageek) 
+
+Website - [Contact](https://www.spokenlikeageek.com/contact/)
+
+Project Link: [https://spokenlikeageek.com](https://www.spokenlikeageek.com/tag/EvernoteRules)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
