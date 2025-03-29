@@ -230,6 +230,51 @@ Finally, you can match on any Tags that the note might have. Obviously, this is 
 
 Remember that ALL of these rules need to match for the actions to be executed.
 
+### Actions
+
+If all your rules have matched then the actions that you defined will be applied. With the exception of Delete the Note It doesn’t matter what order you apply the actions.
+
+#### Move to Notebook
+
+Will move the note from its current notebook to a new one. If you delete the notebook after creating the action then the action will silently fail and if you have logging turned on you will get notification there.
+
+#### Change the Title
+
+This is a simple string find and replace so you could, for example, remove “FW: ” from notes that have been emailed in. If you want to make multiple changes then create separate actions for each one.
+
+If this proves too restrictive then I might look at implementing something grep based in future.
+
+#### Add Tags
+
+This is probably the most interesting action as it allows not only static tags to be added, for example: “Amazon”, “Neil” or “Invoice” but also there are a series of dynamic tags as follows:
+
+| **Tag**  | **Description**                                                     |
+|----------|---------------------------------------------------------------------|
+| {year}   | Adds the current year in the format YYYY (2004, 2024 etc.)          |
+| {month}  | The current month name in full (January, February etc.)             |
+| {day}    | The day number (1-31)                                               |
+| {dow}    | The current day of the week in full (Monday, Tuesday etc.)          |
+| {date}   | The full date in YYYY-MM-DD format (2024-08-13)                     |
+| {dayord} | The same as {day} only with the appropriate ordinal (1st, 2nd etc.) |
+
+To use this action create a comma separated list of tags that you want adding, for example:
+
+    Amazon,Receipt,{year},{month}
+
+#### Delete the Note
+
+Fairly obviously this deletes the note.
+
+#### Send Notifications to Pushover
+
+This is the only action that has no effect on your note. Instead this sends a notification to you via the [Pushover](https://pushover.net/) service when a rule has been triggered. This will come through with the following text:
+
+    Rule <your rule name> has just been triggered
+
+![](https://www.spokenlikeageek.com/wp-content/uploads/2025/03/incoming-61D10C9F-0F22-4B56-8BC8-FB6A67172AF6.png)
+
+If you are wondering why Pushover was chosen and not, say, email or text then that’s because I could implement it without any additional libraries. To send emails reliably, for example, you really need to use something like PHPMailer with an SMTP server which requires more setup.
+
 _For more information, please refer to the [this blog post](https://www.spokenlikeageek.com/2025/04/01/evernote-rules/)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -239,7 +284,9 @@ _For more information, please refer to the [this blog post](https://www.spokenli
 <!-- ROADMAP -->
 ## Known Issues
 
-- None
+Because of the newness of Evernote Rules there is quite a bit of logging included which you can turn on by setting DEBUG in the config file. Setting it to 1 or TRUE will give you basic information and setting it to 2 will give you lots of detail. See this [blog post](https://www.spokenlikeageek.com/2025/04/01/evernote-rules/) for more information on this and viewing the logs.
+
+The other quirk is in how Evernote now works. It used to be the case that you'd only get webhooks when you moved away from creating or editing a note. Now you get a webhook multiple times, even every keystroke.
 
 See the [open issues](https://github.com/williamsdb/EvernoteRules/issues) for a full list of proposed features (and known issues).
 
