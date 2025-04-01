@@ -16,8 +16,8 @@ define("PUSHOVER_USER", "");
 
 // Log level
 // 0 - off
-// 1 - write to log file
-// 2 - write to log file and record webhooks 
+// 1 - write errors to log file
+// 2 - verbose logging and record webhooks 
 define("DEBUG", 0);
 
 // Your oAuth token - do not enter anything here!

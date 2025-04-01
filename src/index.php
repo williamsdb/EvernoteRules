@@ -20,7 +20,6 @@
 // turn off reporting of notices
 error_reporting(0);
 ini_set('display_errors', 0);
-$errdate = date('Ymd_His');
 
 // session start
 session_start();
@@ -36,7 +35,7 @@ require 'functions.php';
 
 // debug incoming request
 if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    file_put_contents('requests.log', $errdate . ',pre - uri=' . $_SERVER['REQUEST_URI'] . PHP_EOL, FILE_APPEND);
+    debug('pre - uri=' . $_SERVER['REQUEST_URI'], 2);
 }
 
 // set up Smarty
@@ -50,6 +49,11 @@ $smarty->setCacheDir('cache');
 $smarty->setConfigDir('configs');
 //$smarty->use_sub_folders = TRUE;
 
+// debug incoming request
+if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+    debug('pre - fetch notebooks', 2);
+}
+
 // load up the list of notebooks
 if (empty($_SESSION['notebooks']) && OAUTH != '') {
     if (str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
@@ -59,9 +63,19 @@ if (empty($_SESSION['notebooks']) && OAUTH != '') {
     }
 }
 
+// debug incoming request
+if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+    debug('pre - post fetch notebooks', 2);
+}
+
 // get the existing rules
 if (empty($_SESSION['rules'])) {
     $_SESSION['rules'] = readRules();
+}
+
+// debug incoming request
+if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+    debug('pre - post fetch rules', 2);
 }
 
 // any error or information messages
@@ -70,11 +84,26 @@ if (!empty($_SESSION['error'])) {
     unset($_SESSION['error']);
 }
 
+// debug incoming request
+if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+    debug('pre - post error messages', 2);
+}
+
 // Get the current path from the requested URL
 $current_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+// debug incoming request
+if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+    debug('pre - current path=' . $current_path, 2);
+}
+
 // Remove leading and trailing slashes
 $trimmed_path = trim($current_path, '/');
+
+// debug incoming request
+if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+    debug('pre - trimmed path=' . $trimmed_path, 2);
+}
 
 // Split the path into segments
 $path_segments = explode('/', $trimmed_path);
@@ -94,7 +123,7 @@ if (isset($path_segments[2])) {
 
 // debug incoming request
 if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    file_put_contents('requests.log', $errdate . ',pre - cmd=' . $cmd . ' id=' . $id . ' act=' . $act . PHP_EOL, FILE_APPEND);
+    debug('pre - cmd=' . $cmd . ' id=' . $id . ' act=' . $act, 2);
 }
 
 // execute command
@@ -169,33 +198,6 @@ switch ($cmd) {
 
         $smarty->assign('log', $log);
         $smarty->display('log.tpl');
-        die;
-
-        break;
-
-    case 'request':
-
-        $log = file_get_contents("./requests.log");
-        $logarr = explode("\n", $log);
-        $log = [];
-        $i = count($logarr);
-        $j = 0;
-        while ($i >= 0 && $j <= 1000) {
-            if (!empty($logarr[$i])) {
-                $t = explode(",", $logarr[$i]);
-                $date = DateTime::createFromFormat("Ymd_His", $t[0]);
-
-                // Format it as "YYYY-MM-DD HH:MM:SS"
-                $formattedDate = $date->format("Y-m-d H:i:s");
-                $log[$j]['date'] = $formattedDate;
-                $log[$j]['entry'] = trim($t[1], "\"");
-                $j++;
-            }
-            $i--;
-        }
-
-        $smarty->assign('log', $log);
-        $smarty->display('request.tpl');
         die;
 
         break;
@@ -375,9 +377,7 @@ switch ($cmd) {
     case 'webhook':
 
         // debug incoming request
-        if (DEBUG == 2) {
-            file_put_contents('requests.log', $errdate . ',webhook - ' . $_SERVER['REQUEST_URI'] . PHP_EOL, FILE_APPEND);
-        }
+        debug('webhook - ' . $_SERVER['REQUEST_URI'], 2);
 
         // does this have the required payload and is it for us?
         if (empty($_REQUEST) || (!empty(USER) && $_REQUEST['userId'] != USER)) die;
@@ -390,9 +390,8 @@ switch ($cmd) {
             $r = print_r($_REQUEST, TRUE);
             $ipAddress = $_SERVER['REMOTE_ADDR'];
             $h = print_r($_SERVER, TRUE);
-            file_put_contents('requests.log', $errdate . ',reason - ' . $reason . PHP_EOL, FILE_APPEND);
             file_put_contents('hooks/' . $filename, $ipAddress . PHP_EOL . PHP_EOL . $h . PHP_EOL . PHP_EOL . $r);
-            //pushover('Webhook triggered from '.$ipAddress, PUSHOVER_TOKEN, PUSHOVER_USER);    
+            debug('reason - ' . $reason, 2);
         }
 
         // action depending on the event type
@@ -425,9 +424,7 @@ switch ($cmd) {
                 $notebookGuid = $_REQUEST['notebookGuid'];
 
                 // debug incoming request
-                if (DEBUG == 2) {
-                    file_put_contents('requests.log', $errdate . ',webhook 1 - user=' . $userId . ' noteGuid=' . $noteGuid . ' notebookGuid=' . $notebookGuid . PHP_EOL, FILE_APPEND);
-                }
+                debug('webhook 1 - user=' . $userId . ' noteGuid=' . $noteGuid . ' notebookGuid=' . $notebookGuid, 2);
 
                 // cycle through the rules finding any matches.
                 $i = 0;
@@ -437,22 +434,34 @@ switch ($cmd) {
                     ) {
 
                         // debug incoming request
-                        if (DEBUG == 2) {
-                            file_put_contents('requests.log', $errdate . ',webhook 2 - match' . PHP_EOL, FILE_APPEND);
-                        }
+                        debug('webhook 2 - match', 2);
 
-                        // we have a note that matches so get the details
-                        $client = new \Evernote\Client(OAUTH, FALSE);
-                        $noteStore = $client->getAdvancedClient()->getNoteStore();
-                        $note = $client->getNote($noteGuid);
-                        $title = $note->title;
-                        $author = $note->attributes->author;
-                        $tags = $noteStore->getNoteTagNames($noteGuid);
+                        try {
+                            // Initialize Evernote client
+                            $client = new \Evernote\Client(OAUTH, FALSE);
+                            $noteStore = $client->getAdvancedClient()->getNoteStore();
+
+                            // Retrieve note details
+                            $note = $client->getNote($noteGuid);
+                            $title = $note->title;
+                            $author = $note->attributes->author;
+
+                            // Get tags associated with the note
+                            $tags = $noteStore->getNoteTagNames($noteGuid);
+                        } catch (\EDAM\Error\EDAMSystemException $e) {
+                            $errorCode = $e->errorCode ?? 'Unknown';
+                            $message = $e->getMessage() ?: 'No error message provided';
+                            debug("Evernote System Exception: Code $errorCode - $message");
+                        } catch (\EDAM\Error\EDAMNotFoundException $e) {
+                            debug("Evernote Note Not Found: " . $e->getMessage());
+                        } catch (\EDAM\Error\EDAMUserException $e) {
+                            debug("Evernote User Exception: " . $e->getMessage());
+                        } catch (Exception $e) {
+                            debug("General Exception: " . $e->getMessage());
+                        }
 
                         // debug incoming request
-                        if (DEBUG == 2) {
-                            file_put_contents('requests.log', $errdate . ',webhook 3 - title=' . $title . ' author=' . $author . PHP_EOL, FILE_APPEND);
-                        }
+                        debug('webhook 3 - title=' . $title . ' author=' . $author, 2);
 
                         // does this note meet all the conditions?
                         $titleRes = checkTitleCondition($title,  $_SESSION['rules'][$i]['condition'], $_SESSION['rules'][$i]['conditionText']);
@@ -460,20 +469,16 @@ switch ($cmd) {
                         $tagRes = checkTagCondition($tags, $_SESSION['rules'][$i]['tags']);
 
                         // debug incoming request
-                        if (DEBUG == 2) {
-                            file_put_contents('requests.log', $errdate . ',webhook 4 - titleRes=' . $titleRes . ' authorRes=' . $authorRes . ' tagRes=' . $tagRes . PHP_EOL, FILE_APPEND);
-                        }
+                        debug('webhook 4 - titleRes=' . $titleRes . ' authorRes=' . $authorRes . ' tagRes=' . $tagRes, 2);
 
                         // do we need to take action?
                         if ($titleRes && $authorRes && $tagRes) {
 
                             // debug incoming request
-                            if (DEBUG == 2) {
-                                file_put_contents('requests.log', $errdate . ',webhook 5 - process actions' . PHP_EOL, FILE_APPEND);
-                            }
+                            debug('webhook 5 - process actions', 2);
 
                             // process actions
-                            processActions($_SESSION['rules'][$i]['actions'], $_SESSION['rules'][$i]['ruleName'], $title, $client, $note, $noteStore, $noteGuid, $errdate);
+                            processActions($_SESSION['rules'][$i]['actions'], $_SESSION['rules'][$i]['ruleName'], $title, $client, $note, $noteStore, $noteGuid, date('Ymd_His') . sprintf('.%03d', (microtime(true) - floor(microtime(true))) * 1000));
                         }
                     }
                     $i++;

@@ -298,20 +298,19 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
 {
 
     // debug incoming request
-    if (DEBUG == 2) {
-        file_put_contents('requests.log', $errdate . ',process - start' . PHP_EOL, FILE_APPEND);
-    }
+    debug('process - start', 2);
 
     // get current tags
     $tags = getTags($noteStore);
+
+    // debug incoming request
+    debug('process - action ' . count($actions) . ' actions to process', 2);
 
     // cycle through the actions 
     for ($i = 0; $i < count($actions); $i++) {
 
         // debug incoming request
-        if (DEBUG == 2) {
-            file_put_contents('requests.log', $errdate . ',process - action ' . $i . ' ' . $actions[$i]['option'] . PHP_EOL, FILE_APPEND);
-        }
+        debug('process - action ' . $i . ' ' . $actions[$i]['option'], 2);
 
         // process the action
         switch ($actions[$i]['option']) {
@@ -320,30 +319,31 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
             case 'move':
 
                 // debug incoming request
-                if (DEBUG == 2) {
-                    file_put_contents('requests.log', $errdate . ',process - move' . PHP_EOL, FILE_APPEND);
-                }
+                debug('process - move', 2);
 
                 try {
                     $notebook = new \Evernote\Model\Notebook();
                     $notebook->guid = $actions[$i]['moveNotebookGuid'];
                     $moved_note = $client->moveNote($note, $notebook);
 
-                    debug("Note moved successfully.");
+                    debug("Note moved successfully.", 2);
                 } catch (Exception $e) {
                     debug('Error moving note: ' .  $e->getMessage());
                 }
 
-                // change the title
+                break;
+
+            // change the title
             case 'subject':
 
                 // debug incoming request
-                if (DEBUG == 2) {
-                    file_put_contents('requests.log', $errdate . ',process - subject' . PHP_EOL, FILE_APPEND);
-                }
+                debug('process - old subject=' . $title, 2);
 
                 // Replace the text
                 $new_contents = str_replace($actions[$i]['subjectFind'], $actions[$i]['subjectReplace'], $title);
+
+                // debug incoming request
+                debug('process - new subject=' . $new_contents, 2);
 
                 try {
                     $ret = $client->getNote($noteGuid);
@@ -354,9 +354,10 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
                     $noteStore = $client->getAdvancedClient()->getNoteStore();
                     $updatedNote = $noteStore->updateNote(OAUTH, $edamNote);
 
-                    debug("Note updated successfully! New title: " . $updatedNote->title);
+                    debug("Note updated successfully! New title: " . $updatedNote->title, 2);
                 } catch (Exception $e) {
                     debug('Error updating note: ' .  $e->getMessage());
+                    debug('process - subject error=' . $e->getMessage(), 2);
                 }
 
                 break;
@@ -364,40 +365,53 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
             // add tags
             case 'tags':
 
-                // are there any tags specified?
-                if (count($actions[$i]['tags']) == 0) break;
+                $tagList = explode(',', $actions[$i]['tags']);
 
                 // debug incoming request
-                if (DEBUG == 2) {
-                    file_put_contents('requests.log', $errdate . ',process - tags' . PHP_EOL, FILE_APPEND);
-                }
+                debug('process - tags ' . count($tagList) . ' to process', 2);
+
+                // are there any tags specified?
+                if (count($tagList) == 0) break;
 
                 // cycle through the tags to format them
                 $tagsToAdd = [];
                 $j = 0;
-                while ($j < count($actions[$i]['tags'])) {
+                while ($j < count($tagList)) {
+
+                    // debug incoming request
+                    debug('process - tags pre=' . $j . ' ' . $tagList[$j], 2);
 
                     // are there any variables?
-                    $actions[$i]['tags'][$j] = parse_content_for_variables($actions[$i]['tags'][$j]);
+                    $tagList[$j] = parse_content_for_variables($tagList[$j]);
+
+                    // debug incoming request
+                    debug('process - tags post=' . $j . ' ' . $tagList[$j], 2);
 
                     // does the tag already exist, if not create
-                    $tag = findGuidByName($tags, $actions[$i]['tags'][$j]);
+                    $tag = findGuidByName($tags, $tagList[$j]);
+
+                    // debug incoming request
+                    debug('process - tags pre=' . $j . ' ' . $tag, 2);
+
                     if ($tag == '') {
                         //create tag
                         $newTag = new \EDAM\Types\Tag;
-                        $newTag->name = $actions[$i]['tags'][$j]; // Set the desired tag name
+                        $newTag->name = $tagList[$j]; // Set the desired tag name
 
                         try {
                             $createdTag = $noteStore->createTag(OAUTH, $newTag);
-                            debug("Tag created successfully. Tag GUID: " . $createdTag->guid);
+                            debug("Tag created successfully. Tag GUID: " . $createdTag->guid, 2);
                         } catch (\EDAM\Error\EDAMUserException $e) {
                             if ($e->errorCode == \EDAM\Error\EDAMErrorCode::DATA_CONFLICT) {
-                                debug("A tag with this name already exists. " . $actions[$i]['tags'][$j]);
+                                debug("A tag with this name already exists. " . $tagList[$j]);
+                                debug('process - tags A tag with this name already exists.' . $tagList[$j], 2);
                             } else {
                                 debug("An error occurred: " . $e->getMessage());
+                                debug('process - tags An error occurred 1: ' . $e->getMessage(), 2);
                             }
                         } catch (\Exception $e) {
                             debug("An error occurred: " . $e->getMessage());
+                            debug('process - tags An error occurred 2: ' . $e->getMessage(), 2);
                         }
                     }
 
@@ -415,7 +429,11 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
                     $edamNote = $ret->getEdamNote();
 
                     // Merge existing tags with new tags
-                    $edamNote->tagGuids = array_merge($edamNote->tagGuids, $tagsToAdd);
+                    if (!empty($edamNote->tagGuids)) {
+                        $edamNote->tagGuids = array_merge($edamNote->tagGuids, $tagsToAdd);
+                    } else {
+                        $edamNote->tagGuids = $tagsToAdd;
+                    }
 
                     // Remove duplicates by converting to array keys and back
                     $edamNote->tagGuids = array_values(array_unique($edamNote->tagGuids));
@@ -423,10 +441,10 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
                     // Update the note on the server
                     $updatedNote = $noteStore->updateNote(OAUTH, $edamNote);
 
-                    echo "Note updated successfully! New title: " . $updatedNote->title;
+                    debug("Note updated successfully! New tags: " . $actions[$i]['tags'], 2);
                 } catch (Exception $e) {
-
-                    echo 'Error updating note: ',  $e->getMessage(), "\n";
+                    debug('Error updating note: ',  $e->getMessage(), 2);
+                    debug('process - tags An error occurred updating note: ' . $e->getMessage(), 2);
                 }
 
                 break;
@@ -435,9 +453,7 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
             case 'pushover':
 
                 // debug incoming request
-                if (DEBUG == 2) {
-                    file_put_contents('requests.log', $errdate . ',process - pushover' . PHP_EOL, FILE_APPEND);
-                }
+                debug('process - pushover', 2);
 
                 return pushover('Rule ' . $ruleName . ' has just been triggered', PUSHOVER_TOKEN, PUSHOVER_USER);
                 break;
@@ -446,31 +462,35 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
             case 'delete':
 
                 // debug incoming request
-                if (DEBUG == 2) {
-                    file_put_contents('requests.log', $errdate . ',process - delete' . PHP_EOL, FILE_APPEND);
-                }
+                debug('process - delete', 2);
 
                 $client->deleteNote($note);
                 break;
 
             // bad case
             default:
-
+                debug('Action id ' . $actions[$i]['option'] . ' has not been recognised');
                 return 'Action id ' . $actions[$i]['option'] . ' has not been recognised';
                 break;
         }
     }
+
+    // debug incoming request
+    debug('process - action finished', 2);
 }
 
 // log calls
-function debug($string)
+function debug($string, $level = 1)
 {
-
     if (DEBUG == 0) return;
 
-    // write the rules to the database file
+    // write the debug string to the log file
     try {
-        file_put_contents('./logs.db', date("Y-m-d H:i:s") . ',' . '"' . $string . '"' . PHP_EOL, FILE_APPEND);
+        if ($level <= 1 && DEBUG == 1) {
+            file_put_contents('./logs.db', date('Ymd_His') . sprintf('.%03d', (microtime(true) - floor(microtime(true))) * 1000) . ',' . '"' . $string . '"' . PHP_EOL, FILE_APPEND);
+        } elseif ($level <= 2 && DEBUG == 2) {
+            file_put_contents('./logs.db', date('Ymd_His') . sprintf('.%03d', (microtime(true) - floor(microtime(true))) * 1000) . ',' . '"' . $string . '"' . PHP_EOL, FILE_APPEND);
+        }
     } catch (\Throwable $th) {
         die('logs.db file not found. Have you created it?');
     }
@@ -478,31 +498,29 @@ function debug($string)
 
 function parse_content_for_variables($text)
 {
-
     if (strpos($text, '{') === FALSE) return $text;
 
     // parse the data
     // The following are valid: {year}, {month}, {day}, {dayord}, {dow}, {date}
-
     // full numeric year: 2024
-    if (strpos($text, '{year}') >= 0) {
+    if (strpos($text, '{year}') !== FALSE) {
         return str_replace('{year}', date("Y"), $text);
     }
 
     // full text month: January
-    if (strpos($text, '{month}') >= 0) {
+    if (strpos($text, '{month}') !== FALSE) {
         return str_replace('{month}', date("F"), $text);
     }
 
     // numeric date: 27
-    if (strpos($text, '{day}') >= 0) {
-        return str_replace('{day}', date("d"), $text);
+    if (strpos($text, '{day}') !== FALSE) {
+        return str_replace('{day}', date("j"), $text);
     }
 
     // numeric day with ordinal: 27th
-    if (strpos($text, '{dayord}') >= 0) {
+    if (strpos($text, '{dayord}') !== FALSE) {
 
-        $num = date("d");
+        $num = date("j");
         $ones = $num % 10;
         $tens = floor($num / 10) % 10;
         if ($tens == 1) {
@@ -526,12 +544,12 @@ function parse_content_for_variables($text)
     }
 
     // full text day of week: Wednesday
-    if (strpos($text, '{dow}') >= 0) {
+    if (strpos($text, '{dow}') !== FALSE) {
         return str_replace('{dow}', date("l"), $text);
     }
 
     // full date: 2024-08-27
-    if (strpos($text, '{date}', 0) >= 0) {
+    if (strpos($text, '{date}', 0) !== FALSE) {
         return str_replace('{date}', date("Y-m-d"), $text);
     }
 

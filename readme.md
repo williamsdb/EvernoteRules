@@ -288,6 +288,10 @@ Because of the newness of Evernote Rules there is quite a bit of logging include
 
 The other quirk is in how Evernote now works. It used to be the case that you'd only get webhooks when you moved away from creating or editing a note. Now you get a webhook multiple times, even every keystroke.
 
+### Updating a note gives: Attempt updateNote where RTE room has already been open for note
+
+If you have the note open in the Evernote client that you want Evernote Rules to update then you will receive this message in the debug log ````Attempt updateNote where RTE room has already been open for note````. You can only have one process editing the note at once and effectively the Evernote client has it locked for updates.
+
 See the [open issues](https://github.com/williamsdb/EvernoteRules/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

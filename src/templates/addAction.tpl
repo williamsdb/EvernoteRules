@@ -17,7 +17,7 @@
     <input type="text" name="subjectReplace" placeholder="Text to replace">
     <br>
     <input type="radio" id="tags" name="option" value="tags">Add these tags<br>
-    <small>You can use the following placeholders: {literal}{year}, {month}, {day}, {dow}, {date}{/literal}</small>
+    <small>You can use the following placeholders: {literal}{year}, {month}, {day}, {dayord}, {dow}, {date}{/literal}</small>
     <input name="tags" id="tags" placeholder="Comma separated list" >
     {if PUSHOVER_USER != ''}
         <br>
