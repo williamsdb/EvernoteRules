@@ -322,7 +322,7 @@ switch ($cmd) {
 
         // Redirect to the relevant page
         $_SESSION['error'] = 'Action created';
-        Header('Location: /editRule/' . $i);
+        Header('Location: /editRule/' . $id);
 
         break;
 
