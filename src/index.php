@@ -314,7 +314,7 @@ switch ($cmd) {
         $_SESSION['rules'][$id]['actions'][$i]['moveNotebookName'] = $notebookName;
         $_SESSION['rules'][$id]['actions'][$i]['subjectFind'] = $_REQUEST['subjectFind'];
         $_SESSION['rules'][$id]['actions'][$i]['subjectReplace'] = $_REQUEST['subjectReplace'];
-        $_SESSION['rules'][$id]['actions'][$i]['tags'] = $_REQUEST['tags'];
+        $_SESSION['rules'][$id]['actions'][$i]['tags'] = rtrim($_REQUEST['tags'], ',');
 
         // store the rules in the rules database file
         writeRules($_SESSION['rules']);
@@ -363,7 +363,7 @@ switch ($cmd) {
         $_SESSION['rules'][$id]['actions'][$act]['moveNotebookName'] = $notebookName;
         $_SESSION['rules'][$id]['actions'][$act]['subjectFind'] = $_REQUEST['subjectFind'];
         $_SESSION['rules'][$id]['actions'][$act]['subjectReplace'] = $_REQUEST['subjectReplace'];
-        $_SESSION['rules'][$id]['actions'][$act]['tags'] = $_REQUEST['tags'];
+        $_SESSION['rules'][$id]['actions'][$act]['tags'] = rtrim($_REQUEST['tags'], ',');
 
         // store the rules in the rules database file
         writeRules($_SESSION['rules']);

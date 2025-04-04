@@ -21,8 +21,8 @@
     <input type="text" name="subjectReplace" placeholder="Text to replace" value="{$subjectReplace}">
     <br>
     <input type="radio" id="tags" name="option" value="tags" {if $option == 'tags'}checked{/if}>Add these tags<br>
-    <small>You can use the following placeholders: {literal}{year}, {month}, {day}, {dow}, {date}{/literal}</small>
-    <input name="tags" id="tags" placeholder="Comma separated list" value="{$tags}">
+    <small>You can use the following placeholders: <a href="#" id="year">{literal}{year}{/literal}</a>, <a href="#" id="month">{literal}{month}{/literal}</a>, <a href="#" id="day">{literal}{day}{/literal}</a>, <a href="#" id="dayord">{literal}{dayord}{/literal}</a>, <a href="#" id="dow">{literal}{dow}{/literal}</a>, <a href="#" id="date">{literal}{date}{/literal}</a></small>
+    <input name="tags" id="tagText" placeholder="Comma separated list" value="{$tags}">
     {if PUSHOVER_USER != ''}
         <br>
         <input type="radio" id="pushover" name="option" value="pushover" {if $option == 'pushover'}checked{/if}>Send a notification to Pushover
