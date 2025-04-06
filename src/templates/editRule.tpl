@@ -69,6 +69,7 @@
 
   <label class="col-lg-2 control-label">and has these Tags</label>
   <input name="tags" id="tags" value="{$tags}" placeholder="Comma separated tags" />
+  <input type="hidden" id="ruleId" value="{$id}" />
 
   <p><input type="submit" value="Update rule"></p>
 
@@ -76,9 +77,10 @@
 <hr>
 <h4>Actions</h4>
 <figure>
-<table style="width: 100%">
+<table style="width: 100%" id="sortable-actions">
 <thead>
     <tr>
+        <th>Order</th>
         <th>Name</th>
         <th>Actions</th>
     </tr>
@@ -86,6 +88,7 @@
 <tbody>
     {section name=act loop=$actions}
     <tr>
+        <td class="drag-handle" width="10%" style="cursor: pointer; text-align: center;">☰</td>
         {if {$actions[act].option} == 'copy'}
             <td>Copy to {$actions[act].copyNotebookName}</td>
         {elseif {$actions[act].option} == 'move'}
@@ -108,6 +111,7 @@
 </tbody>
 <tfoot>
     <tr>
+        <th>Order</th>
         <th>Name</th>
         <th>Actions</th>
     </tr>
@@ -116,6 +120,5 @@
 <figcaption>Actions will be executed in the order shown</figcaption>
 </figure>
 <a class="button" href="/addAction/{$id}">Add a new action</a>
-
 
 {include file="footer.tpl"}

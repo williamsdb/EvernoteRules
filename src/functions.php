@@ -85,7 +85,7 @@ function getNotebooks($smarty, $webhook = TRUE)
         }
     } catch (EDAMSystemException $e) {
         if ($webhook) {
-            debug('getNotebooks - System error: ' . $e->getMessage());
+            debug('getNotebooks - System error: ' . $e->message);
         } else {
             $smarty->assign('error', 'System error: ' . $e->getMessage());
             $smarty->assign('oauth', OAUTH);
@@ -554,6 +554,24 @@ function parse_content_for_variables($text)
     }
 
     return $text;
+}
+
+function reorderActions(array &$rules, int $ruleIndex, int $oldIndex, int $newIndex): bool
+{
+    if (!isset($rules[$ruleIndex]['actions'][$oldIndex])) {
+        return false; // Invalid index
+    }
+
+    // Extract the item to move
+    $item = $rules[$ruleIndex]['actions'][$oldIndex];
+
+    // Remove it from old position
+    array_splice($rules[$ruleIndex]['actions'], $oldIndex, 1);
+
+    // Insert it at the new position
+    array_splice($rules[$ruleIndex]['actions'], $newIndex, 0, [$item]);
+
+    return true;
 }
 
 function array_to_html($val, $var = FALSE)

@@ -450,14 +450,20 @@ switch ($cmd) {
                             $tags = $noteStore->getNoteTagNames($noteGuid);
                         } catch (\EDAM\Error\EDAMSystemException $e) {
                             $errorCode = $e->errorCode ?? 'Unknown';
-                            $message = $e->getMessage() ?: 'No error message provided';
+                            $message = $e->message ?: 'No error message provided';
                             debug("Evernote System Exception: Code $errorCode - $message");
                         } catch (\EDAM\Error\EDAMNotFoundException $e) {
-                            debug("Evernote Note Not Found: " . $e->getMessage());
+                            $errorCode = $e->errorCode ?? 'Unknown';
+                            $message = $e->message ?: 'No error message provided';
+                            debug("Evernote Note Not Found: $errorCode - $message");
                         } catch (\EDAM\Error\EDAMUserException $e) {
-                            debug("Evernote User Exception: " . $e->getMessage());
+                            $errorCode = $e->errorCode ?? 'Unknown';
+                            $message = $e->message ?: 'No error message provided';
+                            debug("Evernote User Exception: $errorCode - $message");
                         } catch (Exception $e) {
-                            debug("General Exception: " . $e->getMessage());
+                            $errorCode = $e->errorCode ?? 'Unknown';
+                            $message = $e->message ?: 'No error message provided';
+                            debug("General Exception: $errorCode - $message");
                         }
 
                         // debug incoming request
