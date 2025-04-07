@@ -5,12 +5,12 @@
 	<a href="/oauth"><img src="/img/connect_evernote_button.png" width="358" height="50"></a>
 {else}
 	<figure>
-	<table style="width: 100%">
+	<table style="width: 100%" id="rulesTable">
 	<thead>
 		<tr>
-			<th>Name</th>
-			<th>Type</th>
-			<th>Notebook</th>
+			<th onclick="sortTable(0)">Name</th>
+			<th onclick="sortTable(1)">Type</th>
+			<th onclick="sortTable(2)">Notebook</th>
 			<th>Actions</th>
 		</tr>
 	</thead>

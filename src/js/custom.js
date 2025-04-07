@@ -39,6 +39,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // setup js required for sortable table
 $(document).ready(function () {
+  $("#datatableResdb").DataTable({
+    columns: [
+      { targets: 0, visible: true, searchable: false, className: "never" },
+      { targets: 1, orderData: 0 },
+    ],
+    order: [[0, "asc"]],
+    pageLength: 10,
+    responsive: true,
+    paging: true,
+    ordering: true,
+    searching: true,
+    info: true,
+  });
+
+  $("#rulesTable").DataTable({
+    columns: [
+      { targets: 0, visible: true },
+      { targets: 1, visible: true },
+      { targets: 2, visible: true },
+      { targets: 3, visible: true },
+    ],
+    order: [[0, "asc"]],
+    pageLength: 10,
+    responsive: true,
+    paging: true,
+    ordering: true,
+    searching: true,
+    info: true,
+  });
+
   let sortableElement = document.querySelector("#sortable-actions tbody");
   if (sortableElement) {
     new Sortable(sortableElement, {

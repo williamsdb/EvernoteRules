@@ -9,11 +9,7 @@
  * @copyright  2024 Neil Thompson
  * @license    https://www.gnu.org/licenses/gpl-3.0.en.html  GNU General Public License v3.0
  * @link       https://github.com/williamsdb/EvernoteRules
- * @see        https://www.spokenlikeageek.com/2023/08/02/exporting-all-wordpress-posts-to-pdf/ Blog post
- * 
- * ARGUMENTS
- * Notebook         Name of the notebook to scan
- * Rules            location and name of file of rules to process on notebook
+ * @see        https://www.spokenlikeageek.com/2025/04/01/evernote-rules/ Blog post
  *
  */
 
