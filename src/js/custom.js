@@ -37,14 +37,14 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// setup js required for sortable table
 $(document).ready(function () {
+  // setup js required for datatables
   $("#datatableResdb").DataTable({
     columns: [
       { targets: 0, visible: true, searchable: false, className: "never" },
       { targets: 1, orderData: 0 },
     ],
-    order: [[0, "asc"]],
+    order: [[0, "desc"]],
     pageLength: 10,
     responsive: true,
     paging: true,
@@ -69,6 +69,7 @@ $(document).ready(function () {
     info: true,
   });
 
+  // setup js required for sortable table
   let sortableElement = document.querySelector("#sortable-actions tbody");
   if (sortableElement) {
     new Sortable(sortableElement, {
