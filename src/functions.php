@@ -486,10 +486,11 @@ function debug($string, $level = 1)
 
     // write the debug string to the log file
     try {
+        $dt = DateTime::createFromFormat('U.u', microtime(true));
         if ($level <= 1 && DEBUG == 1) {
-            file_put_contents('./logs.db', date('Ymd_His') . sprintf('.%03d', (microtime(true) - floor(microtime(true))) * 1000) . ',' . '"' . $string . '"' . PHP_EOL, FILE_APPEND);
+            file_put_contents('./logs.db', $dt->format("Ymd_His.u") . ',' . '"' . $string . '"' . PHP_EOL, FILE_APPEND);
         } elseif ($level <= 2 && DEBUG == 2) {
-            file_put_contents('./logs.db', date('Ymd_His') . sprintf('.%03d', (microtime(true) - floor(microtime(true))) * 1000) . ',' . '"' . $string . '"' . PHP_EOL, FILE_APPEND);
+            file_put_contents('./logs.db', $dt->format("Ymd_His.u") . ',' . '"' . $string . '"' . PHP_EOL, FILE_APPEND);
         }
     } catch (\Throwable $th) {
         die('logs.db file not found. Have you created it?');
