@@ -8,6 +8,7 @@
     <tr>
         <th>Date</th>
         <th>Log Entry</th>
+        <th>Function</th>
     </tr>
 </thead>
 <tbody>
@@ -15,6 +16,7 @@
     <tr>
         <td>{$log[all].date}</td>
         <td>{$log[all].entry}</td>
+        <td>{$log[all].function}, {$log[all].position}</td>
     </tr>
     {/section}
 </tbody>
@@ -22,6 +24,7 @@
     <tr>
         <th>Date</th>
         <th>Log Entry</th>
+        <th>Function</th>
     </tr>
 </tfoot>
 </table>

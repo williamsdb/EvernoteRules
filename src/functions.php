@@ -55,7 +55,7 @@ function getNotebooks($smarty, $webhook = TRUE)
         // Check if $notebooks is empty
         if (empty($notebooks)) {
             if ($webhook) {
-                debug('getNotebooks - No notebooks found.');
+                debug('getNotebooks - No notebooks found.', 1, 'getNotebooks', 10);
             } else {
                 $smarty->assign('error', 'No notebooks found in your account.');
                 $smarty->assign('oauth', OAUTH);
@@ -66,7 +66,7 @@ function getNotebooks($smarty, $webhook = TRUE)
     } catch (EDAMUserException $e) {
         if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
             if ($webhook) {
-                debug('getNotebooks - Token has expired.');
+                debug('getNotebooks - Token has expired.', 1, 'getNotebooks', 20);
             } else {
                 $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
                 $smarty->assign('oauth', OAUTH);
@@ -75,7 +75,7 @@ function getNotebooks($smarty, $webhook = TRUE)
             die;
         } else {
             if ($webhook) {
-                debug('getNotebooks - An error occurred: ' . $e->getMessage());
+                debug('getNotebooks - An error occurred: ' . $e->getMessage(), 1, 'getNotebooks', 30);
             } else {
                 $smarty->assign('error', 'An error occurred: ' . $e->getMessage());
                 $smarty->assign('oauth', OAUTH);
@@ -85,7 +85,7 @@ function getNotebooks($smarty, $webhook = TRUE)
         }
     } catch (EDAMSystemException $e) {
         if ($webhook) {
-            debug('getNotebooks - System error: ' . $e->message);
+            debug('getNotebooks - System error: ' . $e->message, 1, 'getNotebooks', 40);
         } else {
             $smarty->assign('error', 'System error: ' . $e->getMessage());
             $smarty->assign('oauth', OAUTH);
@@ -94,7 +94,7 @@ function getNotebooks($smarty, $webhook = TRUE)
         die;
     } catch (EDAMNotFoundException $e) {
         if ($webhook) {
-            debug('getNotebooks - Requested resource not found: ' . $e->getMessage());
+            debug('getNotebooks - Requested resource not found: ' . $e->getMessage(), 1, 'getNotebooks', 50);
         } else {
             $smarty->assign('error', 'Requested resource not found: ' . $e->getMessage());
             $smarty->assign('oauth', OAUTH);
@@ -104,7 +104,7 @@ function getNotebooks($smarty, $webhook = TRUE)
     } catch (Exception $e) {
         // Catch any other unexpected exceptions
         if ($webhook) {
-            debug('getNotebooks - Unexpected error: ' . $e->getMessage());
+            debug('getNotebooks - Unexpected error: ' . $e->getMessage(), 1, 'getNotebooks', 60);
         } else {
             $smarty->assign('error', 'Unexpected error: ' . $e->getMessage());
             $smarty->assign('oauth', OAUTH);
@@ -134,7 +134,7 @@ function getTags($client)
 
         if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
             if ($webhook) {
-                debug('Token has expired. getTags 1');
+                debug('Token has expired. getTags 1', 1, 'getTags', 10);
             } else {
                 $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
                 $smarty->assign('oauth', OAUTH);
@@ -144,7 +144,7 @@ function getTags($client)
         } else {
             // Handle other exceptions
             if ($webhook) {
-                debug('An error occurred: ' . $e->getMessage());
+                debug('An error occurred: ' . $e->getMessage(), 1, 'getTags', 20);
             } else {
                 $smarty->assign('error', 'An error occurred: ' . $e->getMessage());
                 $smarty->assign('oauth', OAUTH);
@@ -156,7 +156,7 @@ function getTags($client)
 
     if (empty($tags)) {
         if ($webhook) {
-            debug('No tags found.');
+            debug('No tags found.', 1, 'getTags', 30);
         } else {
             $smarty->assign('error', 'Token has expired. <a href="/oauth">Click here to regenerate</a>');
             $smarty->assign('oauth', OAUTH);
@@ -298,19 +298,19 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
 {
 
     // debug incoming request
-    debug('process - start', 2);
+    debug('process - start', 2, 'processActions', 10);
 
     // get current tags
     $tags = getTags($noteStore);
 
     // debug incoming request
-    debug('process - action ' . count($actions) . ' actions to process', 2);
+    debug('process - action ' . count($actions) . ' actions to process', 2, 'processActions', 20);
 
     // cycle through the actions 
     for ($i = 0; $i < count($actions); $i++) {
 
         // debug incoming request
-        debug('process - action ' . $i . ' ' . $actions[$i]['option'], 2);
+        debug('process - action ' . $i . ' ' . $actions[$i]['option'], 2, 'processActions', 30);
 
         // process the action
         switch ($actions[$i]['option']) {
@@ -319,14 +319,14 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
             case 'move':
 
                 // debug incoming request
-                debug('process - move', 2);
+                debug('process - move', 2, 'processActions', 40);
 
                 try {
                     $notebook = new \Evernote\Model\Notebook();
                     $notebook->guid = $actions[$i]['moveNotebookGuid'];
                     $moved_note = $client->moveNote($note, $notebook);
 
-                    debug("Note moved successfully.", 2);
+                    debug("Note moved successfully.", 2, 'processActions', 50);
                 } catch (Exception $e) {
                     debug('Error moving note: ' .  $e->getMessage());
                 }
@@ -337,13 +337,13 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
             case 'subject':
 
                 // debug incoming request
-                debug('process - old subject=' . $title, 2);
+                debug('process - old subject=' . $title, 2, 'processActions', 60);
 
                 // Replace the text
                 $new_contents = str_replace($actions[$i]['subjectFind'], $actions[$i]['subjectReplace'], $title);
 
                 // debug incoming request
-                debug('process - new subject=' . $new_contents, 2);
+                debug('process - new subject=' . $new_contents, 2, 'processActions', 70);
 
                 try {
                     $ret = $client->getNote($noteGuid);
@@ -354,10 +354,10 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
                     $noteStore = $client->getAdvancedClient()->getNoteStore();
                     $updatedNote = $noteStore->updateNote(OAUTH, $edamNote);
 
-                    debug("Note updated successfully! New title: " . $updatedNote->title, 2);
+                    debug("Note updated successfully! New title: " . $updatedNote->title, 2, 'processActions', 80);
                 } catch (Exception $e) {
-                    debug('Error updating note: ' .  $e->getMessage());
-                    debug('process - subject error=' . $e->getMessage(), 2);
+                    debug('Error updating note: ' .  $e->getMessage(), 1, 'processActions', 90);
+                    debug('process - subject error=' . $e->getMessage(), 2, 'processActions', 100);
                 }
 
                 break;
@@ -368,7 +368,7 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
                 $tagList = explode(',', $actions[$i]['tags']);
 
                 // debug incoming request
-                debug('process - tags ' . count($tagList) . ' to process', 2);
+                debug('process - tags ' . count($tagList) . ' to process', 2, 'processActions', 110);
 
                 // are there any tags specified?
                 if (count($tagList) == 0) break;
@@ -379,19 +379,19 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
                 while ($j < count($tagList)) {
 
                     // debug incoming request
-                    debug('process - tags pre=' . $j . ' ' . $tagList[$j], 2);
+                    debug('process - tags pre=' . $j . ' ' . $tagList[$j], 2, 'processActions', 120);
 
                     // are there any variables?
                     $tagList[$j] = parse_content_for_variables($tagList[$j]);
 
                     // debug incoming request
-                    debug('process - tags post=' . $j . ' ' . $tagList[$j], 2);
+                    debug('process - tags post=' . $j . ' ' . $tagList[$j], 2, 'processActions', 130);
 
                     // does the tag already exist, if not create
                     $tag = findGuidByName($tags, $tagList[$j]);
 
                     // debug incoming request
-                    debug('process - tags pre=' . $j . ' ' . $tag, 2);
+                    debug('process - tags pre=' . $j . ' ' . $tag, 2, 'processActions', 140);
 
                     if ($tag == '') {
                         //create tag
@@ -400,18 +400,18 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
 
                         try {
                             $createdTag = $noteStore->createTag(OAUTH, $newTag);
-                            debug("Tag created successfully. Tag GUID: " . $createdTag->guid, 2);
+                            debug("Tag created successfully. Tag GUID: " . $createdTag->guid, 2, 'processActions', 150);
                         } catch (\EDAM\Error\EDAMUserException $e) {
                             if ($e->errorCode == \EDAM\Error\EDAMErrorCode::DATA_CONFLICT) {
-                                debug("A tag with this name already exists. " . $tagList[$j]);
-                                debug('process - tags A tag with this name already exists.' . $tagList[$j], 2);
+                                debug("A tag with this name already exists. " . $tagList[$j], 1, 'processActions', 160);
+                                debug('process - tags A tag with this name already exists.' . $tagList[$j], 2, 'processActions', 170);
                             } else {
-                                debug("An error occurred: " . $e->getMessage());
-                                debug('process - tags An error occurred 1: ' . $e->getMessage(), 2);
+                                debug("An error occurred: " . $e->getMessage(), 1, 'processActions', 180);
+                                debug('process - tags An error occurred 1: ' . $e->getMessage(), 2, 'processActions', 190);
                             }
                         } catch (\Exception $e) {
-                            debug("An error occurred: " . $e->getMessage());
-                            debug('process - tags An error occurred 2: ' . $e->getMessage(), 2);
+                            debug("An error occurred: " . $e->getMessage(), 1, 'processActions', 200);
+                            debug('process - tags An error occurred 2: ' . $e->getMessage(), 2, 'processActions', 210);
                         }
                     }
 
@@ -441,10 +441,10 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
                     // Update the note on the server
                     $updatedNote = $noteStore->updateNote(OAUTH, $edamNote);
 
-                    debug("Note updated successfully! New tags: " . $actions[$i]['tags'], 2);
+                    debug("Note updated successfully! New tags: " . $actions[$i]['tags'], 2, 'processActions', 220);
                 } catch (Exception $e) {
-                    debug('Error updating note: ',  $e->getMessage(), 2);
-                    debug('process - tags An error occurred updating note: ' . $e->getMessage(), 2);
+                    debug('Error updating note: ',  $e->getMessage(), 2, 'processActions', 230);
+                    debug('process - tags An error occurred updating note: ' . $e->getMessage(), 2, 'processActions', 240);
                 }
 
                 break;
@@ -453,7 +453,7 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
             case 'pushover':
 
                 // debug incoming request
-                debug('process - pushover', 2);
+                debug('process - pushover', 2, 'processActions', 250);
 
                 return pushover('Rule ' . $ruleName . ' has just been triggered', PUSHOVER_TOKEN, PUSHOVER_USER);
                 break;
@@ -462,35 +462,40 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
             case 'delete':
 
                 // debug incoming request
-                debug('process - delete', 2);
+                debug('process - delete', 2, 'processActions', 260);
 
                 $client->deleteNote($note);
                 break;
 
             // bad case
             default:
-                debug('Action id ' . $actions[$i]['option'] . ' has not been recognised');
+                debug('Action id ' . $actions[$i]['option'] . ' has not been recognised', 1, 'processActions', 270);
                 return 'Action id ' . $actions[$i]['option'] . ' has not been recognised';
                 break;
         }
     }
 
     // debug incoming request
-    debug('process - action finished', 2);
+    debug('process - action finished', 2, 'processActions', 280);
 }
 
 // log calls
-function debug($string, $level = 1)
+function debug($string, $level = 1, $function = '', $pos = 0)
 {
     if (DEBUG == 0) return;
 
     // write the debug string to the log file
     try {
         $dt = DateTime::createFromFormat('U.u', microtime(true));
-        if ($level <= 1 && DEBUG == 1) {
-            file_put_contents('./logs.db', $dt->format("Ymd_His.u") . ',' . '"' . $string . '"' . PHP_EOL, FILE_APPEND);
-        } elseif ($level <= 2 && DEBUG == 2) {
-            file_put_contents('./logs.db', $dt->format("Ymd_His.u") . ',' . '"' . $string . '"' . PHP_EOL, FILE_APPEND);
+        $hr = hrtime(true); // nanoseconds (int)
+
+        if (($level <= 1 && DEBUG == 1) || ($level <= 2 && DEBUG == 2)) {
+            $timestamp = $dt->format("Ymd_His") . sprintf('.%06d', $dt->format("u"));
+            $uniqueId = substr($hr, -6);
+
+            $line = $timestamp . '_' . $uniqueId . ',' . $function . ',' . $pos . ',' . '"' . $string . '"' . PHP_EOL;
+
+            file_put_contents('./logs.db', $line, FILE_APPEND);
         }
     } catch (\Throwable $th) {
         die('logs.db file not found. Have you created it?');

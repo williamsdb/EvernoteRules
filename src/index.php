@@ -31,7 +31,7 @@ require 'functions.php';
 
 // debug incoming request
 if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    debug('pre - uri=' . $_SERVER['REQUEST_URI'], 2);
+    debug('pre - uri=' . $_SERVER['REQUEST_URI'], 2, 'index.php', 10);
 }
 
 // set up Smarty
@@ -47,7 +47,7 @@ $smarty->setConfigDir('configs');
 
 // debug incoming request
 if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    debug('pre - fetch notebooks', 2);
+    debug('pre - fetch notebooks', 2, 'index.php', 20);
 }
 
 // load up the list of notebooks
@@ -61,7 +61,7 @@ if (empty($_SESSION['notebooks']) && OAUTH != '') {
 
 // debug incoming request
 if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    debug('pre - post fetch notebooks', 2);
+    debug('pre - post fetch notebooks', 2, 'index.php', 30);
 }
 
 // get the existing rules
@@ -71,7 +71,7 @@ if (empty($_SESSION['rules'])) {
 
 // debug incoming request
 if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    debug('pre - post fetch rules', 2);
+    debug('pre - post fetch rules', 2, 'index.php', 40);
 }
 
 // any error or information messages
@@ -82,7 +82,7 @@ if (!empty($_SESSION['error'])) {
 
 // debug incoming request
 if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    debug('pre - post error messages', 2);
+    debug('pre - post error messages', 2, 'index.php', 50);
 }
 
 // Get the current path from the requested URL
@@ -90,7 +90,7 @@ $current_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // debug incoming request
 if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    debug('pre - current path=' . $current_path, 2);
+    debug('pre - current path=' . $current_path, 2, 'index.php', 60);
 }
 
 // Remove leading and trailing slashes
@@ -98,7 +98,7 @@ $trimmed_path = trim($current_path, '/');
 
 // debug incoming request
 if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    debug('pre - trimmed path=' . $trimmed_path, 2);
+    debug('pre - trimmed path=' . $trimmed_path, 2, 'index.php', 70);
 }
 
 // Split the path into segments
@@ -119,7 +119,7 @@ if (isset($path_segments[2])) {
 
 // debug incoming request
 if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    debug('pre - cmd=' . $cmd . ' id=' . $id . ' act=' . $act, 2);
+    debug('pre - cmd=' . $cmd . ' id=' . $id . ' act=' . $act, 2, 'index.php', 80);
 }
 
 // execute command
@@ -186,7 +186,9 @@ switch ($cmd) {
             if (!empty($logarr[$i])) {
                 $t = explode(",", $logarr[$i]);
                 $log[$j]['date'] = $t[0];
-                $log[$j]['entry'] = trim($t[1], "\"");
+                $log[$j]['function'] = $t[1];
+                $log[$j]['position'] = $t[2];
+                $log[$j]['entry'] = trim($t[3], "\"");
                 $j++;
             }
             $i--;
@@ -373,7 +375,7 @@ switch ($cmd) {
     case 'webhook':
 
         // debug incoming request
-        debug('webhook - ' . $_SERVER['REQUEST_URI'], 2);
+        debug('webhook - ' . $_SERVER['REQUEST_URI'], 2, 'index.php', 90);
 
         // does this have the required payload and is it for us?
         if (empty($_REQUEST) || (!empty(USER) && $_REQUEST['userId'] != USER)) die;
@@ -387,7 +389,7 @@ switch ($cmd) {
             $ipAddress = $_SERVER['REMOTE_ADDR'];
             $h = print_r($_SERVER, TRUE);
             file_put_contents('hooks/' . $filename, $ipAddress . PHP_EOL . PHP_EOL . $h . PHP_EOL . PHP_EOL . $r);
-            debug('reason - ' . $reason, 2);
+            debug('reason - ' . $reason, 2, 'index.php', 100);
         }
 
         // action depending on the event type
@@ -420,7 +422,7 @@ switch ($cmd) {
                 $notebookGuid = $_REQUEST['notebookGuid'];
 
                 // debug incoming request
-                debug('webhook 1 - user=' . $userId . ' noteGuid=' . $noteGuid . ' notebookGuid=' . $notebookGuid, 2);
+                debug('webhook 1 - user=' . $userId . ' noteGuid=' . $noteGuid . ' notebookGuid=' . $notebookGuid, 2, 'index.php', 110);
 
                 // cycle through the rules finding any matches.
                 $i = 0;
@@ -430,7 +432,7 @@ switch ($cmd) {
                     ) {
 
                         // debug incoming request
-                        debug('webhook 2 - match', 2);
+                        debug('webhook 2 - match', 2, 'index.php', 120);
 
                         try {
                             // Initialize Evernote client
@@ -447,23 +449,23 @@ switch ($cmd) {
                         } catch (\EDAM\Error\EDAMSystemException $e) {
                             $errorCode = $e->errorCode ?? 'Unknown';
                             $message = $e->message ?: 'No error message provided';
-                            debug("Evernote System Exception: Code $errorCode - $message");
+                            debug("Evernote System Exception: Code $errorCode - $message", 1, 'index.php', 130);
                         } catch (\EDAM\Error\EDAMNotFoundException $e) {
                             $errorCode = $e->errorCode ?? 'Unknown';
                             $message = $e->message ?: 'No error message provided';
-                            debug("Evernote Note Not Found: $errorCode - $message");
+                            debug("Evernote Note Not Found: $errorCode - $message", 1, 'index.php', 140);
                         } catch (\EDAM\Error\EDAMUserException $e) {
                             $errorCode = $e->errorCode ?? 'Unknown';
                             $message = $e->message ?: 'No error message provided';
-                            debug("Evernote User Exception: $errorCode - $message");
+                            debug("Evernote User Exception: $errorCode - $message", 1, 'index.php', 150);
                         } catch (Exception $e) {
                             $errorCode = $e->errorCode ?? 'Unknown';
                             $message = $e->message ?: 'No error message provided';
-                            debug("General Exception: $errorCode - $message");
+                            debug("General Exception: $errorCode - $message", 1, 'index.php', 160);
                         }
 
                         // debug incoming request
-                        debug('webhook 3 - title=' . $title . ' author=' . $author, 2);
+                        debug('webhook 3 - title=' . $title . ' author=' . $author, 2, 'index.php', 170);
 
                         // does this note meet all the conditions?
                         $titleRes = checkTitleCondition($title,  $_SESSION['rules'][$i]['condition'], $_SESSION['rules'][$i]['conditionText']);
@@ -471,13 +473,13 @@ switch ($cmd) {
                         $tagRes = checkTagCondition($tags, $_SESSION['rules'][$i]['tags']);
 
                         // debug incoming request
-                        debug('webhook 4 - titleRes=' . $titleRes . ' authorRes=' . $authorRes . ' tagRes=' . $tagRes, 2);
+                        debug('webhook 4 - titleRes=' . $titleRes . ' authorRes=' . $authorRes . ' tagRes=' . $tagRes, 2, 'index.php', 180);
 
                         // do we need to take action?
                         if ($titleRes && $authorRes && $tagRes) {
 
                             // debug incoming request
-                            debug('webhook 5 - process actions', 2);
+                            debug('webhook 5 - process actions', 2, 'index.php', 190);
 
                             // process actions
                             processActions($_SESSION['rules'][$i]['actions'], $_SESSION['rules'][$i]['ruleName'], $title, $client, $note, $noteStore, $noteGuid, date('Ymd_His') . sprintf('.%03d', (microtime(true) - floor(microtime(true))) * 1000));
