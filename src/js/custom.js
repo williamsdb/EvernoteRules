@@ -43,6 +43,7 @@ $(document).ready(function () {
     columns: [
       { targets: 0, visible: true, searchable: false, className: "never" },
       { targets: 1, orderData: 0 },
+      { targets: 2, orderData: 0 },
     ],
     order: [[0, "desc"]],
     pageLength: 10,
