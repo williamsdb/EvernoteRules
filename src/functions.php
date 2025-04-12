@@ -381,6 +381,9 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
                     // debug incoming request
                     debug('process - tags pre=' . $j . ' ' . $tagList[$j], 2, 'processActions', 120);
 
+                    // remove any spaces
+                    $tagList[$j] = trim($tagList[$j]);
+
                     // are there any variables?
                     $tagList[$j] = parse_content_for_variables($tagList[$j]);
 
