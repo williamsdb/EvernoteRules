@@ -442,10 +442,13 @@ switch ($cmd) {
                             // Retrieve note details
                             $note = $client->getNote($noteGuid);
                             $title = $note->title;
+                            debug('webhook 2 - title =' . $title, 2, 'index.php', 122);
                             $author = $note->attributes->author;
+                            debug('webhook 2 - author =' . $author, 2, 'index.php', 124);
 
                             // Get tags associated with the note
                             $tags = $noteStore->getNoteTagNames($noteGuid);
+                            debug('webhook 2 - tags=' . $tags, 2, 'index.php', 126);
                         } catch (\EDAM\Error\EDAMSystemException $e) {
                             $errorCode = $e->getCode() ?? 'Unknown';
                             $message = $e->getMessage() ?: 'No error message provided';
