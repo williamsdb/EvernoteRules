@@ -447,20 +447,20 @@ switch ($cmd) {
                             // Get tags associated with the note
                             $tags = $noteStore->getNoteTagNames($noteGuid);
                         } catch (\EDAM\Error\EDAMSystemException $e) {
-                            $errorCode = $e->errorCode ?? 'Unknown';
+                            $errorCode = $e->getCode() ?? 'Unknown';
                             $message = $e->message ?: 'No error message provided';
                             debug("Evernote System Exception: Code $errorCode - $message", 1, 'index.php', 130);
                         } catch (\EDAM\Error\EDAMNotFoundException $e) {
-                            $errorCode = $e->errorCode ?? 'Unknown';
-                            $message = $e->message ?: 'No error message provided';
+                            $errorCode = $e->getCode() ?? 'Unknown';
+                            $message = $e->getMessage() ?: 'No error message provided';
                             debug("Evernote Note Not Found: $errorCode - $message", 1, 'index.php', 140);
                         } catch (\EDAM\Error\EDAMUserException $e) {
-                            $errorCode = $e->errorCode ?? 'Unknown';
-                            $message = $e->message ?: 'No error message provided';
+                            $errorCode = $e->getCode() ?? 'Unknown';
+                            $message = $e->getMessage() ?: 'No error message provided';
                             debug("Evernote User Exception: $errorCode - $message", 1, 'index.php', 150);
                         } catch (Exception $e) {
-                            $errorCode = $e->errorCode ?? 'Unknown';
-                            $message = $e->message ?: 'No error message provided';
+                            $errorCode = $e->getCode() ?? 'Unknown';
+                            $message = $e->getMessage() ?: 'No error message provided';
                             debug("General Exception: $errorCode - $message", 1, 'index.php', 160);
                         }
 

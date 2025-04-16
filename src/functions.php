@@ -64,7 +64,7 @@ function getNotebooks($smarty, $webhook = TRUE)
             die;
         }
     } catch (EDAMUserException $e) {
-        if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
+        if ($e->getCode() === EDAMErrorCode::AUTH_EXPIRED) {
             if ($webhook) {
                 debug('getNotebooks - Token has expired.', 1, 'getNotebooks', 20);
             } else {
@@ -85,7 +85,7 @@ function getNotebooks($smarty, $webhook = TRUE)
         }
     } catch (EDAMSystemException $e) {
         if ($webhook) {
-            debug('getNotebooks - System error: ' . $e->message, 1, 'getNotebooks', 40);
+            debug('getNotebooks - System error: ' . $e->getMessage(), 1, 'getNotebooks', 40);
         } else {
             $smarty->assign('error', 'System error: ' . $e->getMessage());
             $smarty->assign('oauth', OAUTH);
@@ -132,7 +132,7 @@ function getTags($client)
         $tags = $client->listTags();
     } catch (EDAMUserException $e) {
 
-        if ($e->errorCode === EDAMErrorCode::AUTH_EXPIRED) {
+        if ($e->getCode() === EDAMErrorCode::AUTH_EXPIRED) {
             if ($webhook) {
                 debug('Token has expired. getTags 1', 1, 'getTags', 10);
             } else {
