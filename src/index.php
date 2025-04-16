@@ -448,7 +448,7 @@ switch ($cmd) {
                             $tags = $noteStore->getNoteTagNames($noteGuid);
                         } catch (\EDAM\Error\EDAMSystemException $e) {
                             $errorCode = $e->getCode() ?? 'Unknown';
-                            $message = $e->message ?: 'No error message provided';
+                            $message = $e->getMessage() ?: 'No error message provided';
                             debug("Evernote System Exception: Code $errorCode - $message", 1, 'index.php', 130);
                         } catch (\EDAM\Error\EDAMNotFoundException $e) {
                             $errorCode = $e->getCode() ?? 'Unknown';
