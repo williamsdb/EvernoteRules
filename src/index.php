@@ -450,9 +450,14 @@ switch ($cmd) {
                             $tags = $noteStore->getNoteTagNames($noteGuid);
                             debug('webhook 2 - tags=' . $tags, 2, 'index.php', 126);
                         } catch (\EDAM\Error\EDAMSystemException $e) {
-                            $errorCode = $e->getCode() ?? 'Unknown';
-                            $message = $e->getMessage() ?: 'No error message provided';
-                            debug("Evernote System Exception: Code $errorCode - $message", 1, 'index.php', 130);
+                            if ($e->errorCode === \EDAM\Error\EDAMErrorCode::RATE_LIMIT_REACHED) {
+                                $rateLimitDuration = $e->rateLimitDuration; // In seconds
+                                debug("Rate limit reached. Try again in {$rateLimitDuration} seconds.", 1, 'index.php', 132);
+                            } else {
+                                $errorCode = $e->getCode() ?? 'Unknown';
+                                $message = $e->getMessage() ?: 'No error message provided';
+                                debug("Evernote System Exception: Code $errorCode - $message", 1, 'index.php', 134);
+                            }
                         } catch (\EDAM\Error\EDAMNotFoundException $e) {
                             $errorCode = $e->getCode() ?? 'Unknown';
                             $message = $e->getMessage() ?: 'No error message provided';
@@ -529,6 +534,33 @@ switch ($cmd) {
                 //do nothing for now
         }
 
+        break;
+
+    case 'user':
+
+        $client = new \Evernote\Client(OAUTH, FALSE);
+
+        $advancedClient = $client->getAdvancedClient();
+
+        try {
+            // Get the UserStore
+            $userStore = $advancedClient->getUserStore();
+
+            // Get the current user's information
+            $user = $userStore->getUser();
+        } catch (\Exception $e) {
+            echo "Error getting user info: " . $e->getMessage();
+        }
+
+        // user page
+        $smarty->assign('oauth', OAUTH);
+        $smarty->assign('user', $user->id);
+        $smarty->assign('username', $user->username);
+        $smarty->assign('name', $user->name);
+        $smarty->assign('email', $user->email);
+        $smarty->assign('premium', $user->accounting->premium);
+        $smarty->assign('created', date('Y-m-d', $user->created / 1000));
+        $smarty->display('user.tpl');
         break;
 
     case '':
