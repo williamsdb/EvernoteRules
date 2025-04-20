@@ -448,7 +448,7 @@ switch ($cmd) {
 
                             // Get tags associated with the note
                             $tags = $noteStore->getNoteTagNames($noteGuid);
-                            debug('webhook 2 - tags=' . print_r($tags, TRUE), 2, 'index.php', 126);
+                            debug('webhook 2 - tags=' . implode(":", $tags), 2, 'index.php', 126);
                         } catch (\EDAM\Error\EDAMSystemException $e) {
                             if ($e->errorCode === \EDAM\Error\EDAMErrorCode::RATE_LIMIT_REACHED) {
                                 $rateLimitDuration = $e->rateLimitDuration; // In seconds
