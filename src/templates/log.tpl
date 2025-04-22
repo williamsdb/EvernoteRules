@@ -3,7 +3,7 @@
 <h3>Log</h3>
 
 <figure>
-<table style="width: 100%" id="datatableResdb" class="display nowrap" cellspacing="0" width="100%">
+<table style="width: 100%" id="logTable" class="display nowrap" cellspacing="0" width="100%">
 <thead>
     <tr>
         <th>Date</th>

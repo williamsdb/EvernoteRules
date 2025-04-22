@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 $(document).ready(function () {
   // setup js required for datatables
-  $("#datatableResdb").DataTable({
+  $("#logTable").DataTable({
     columns: [
       { targets: 0, visible: true, className: "never" },
       { targets: 1, orderData: 0 },
@@ -52,6 +52,17 @@ $(document).ready(function () {
     ordering: true,
     searching: true,
     info: true,
+  });
+
+  var table = $("#logTable").DataTable();
+
+  table.on("page.dt", function () {
+    $("html, body").animate(
+      {
+        scrollTop: $("#logTable").offset().top,
+      },
+      300
+    ); // Adjust speed as needed
   });
 
   $("#rulesTable").DataTable({
@@ -68,6 +79,17 @@ $(document).ready(function () {
     ordering: true,
     searching: true,
     info: true,
+  });
+
+  var rulesTable = $("#rulesTable").DataTable();
+
+  rulesTable.on("page.dt", function () {
+    $("html, body").animate(
+      {
+        scrollTop: $("#rulesTable").offset().top,
+      },
+      300
+    ); // Adjust speed as needed
   });
 
   // setup js required for sortable table
