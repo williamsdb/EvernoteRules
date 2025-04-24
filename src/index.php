@@ -50,11 +50,10 @@ if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
     debug('pre - fetch notebooks', 2, 'index.php', 20);
 }
 
-// load up the list of notebooks
+// load up the list of notebooks if this is not a webhook
+// and we have an oAuth token
 if (empty($_SESSION['notebooks']) && OAUTH != '') {
-    if (str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-        $_SESSION['notebooks'] = getNotebooks($smarty, TRUE);
-    } else {
+    if (!str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
         $_SESSION['notebooks'] = getNotebooks($smarty, FALSE);
     }
 }
