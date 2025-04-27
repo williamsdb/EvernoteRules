@@ -420,6 +420,21 @@ switch ($cmd) {
                 $noteGuid = $_REQUEST['guid'];
                 $notebookGuid = $_REQUEST['notebookGuid'];
 
+                // if there is already a file with the noteGuid id in the system temp directory then die
+                // else create a file in the system temp directory with a name of noteGuid
+                // this prevent EvernoteRules from processing update hooks triggered by carrying
+                // out actions on the note from the first hook.
+                $tmpDir = sys_get_temp_dir();
+                $tmpFile = $tmpDir . DIRECTORY_SEPARATOR . $noteGuid;
+                if (file_exists($tmpFile)) {
+                    debug('webhook 1 - already processing ' . $noteGuid . ' so quit', 2, 'index.php', 102);
+                    die;
+                } else {
+                    // create an empty file to mark processing
+                    debug('webhook 1 - create temp file for ' . $noteGuid, 2, 'index.php', 104);
+                    touch($tmpFile);
+                }
+
                 // debug incoming request
                 debug('webhook 1 - user=' . $userId . ' noteGuid=' . $noteGuid . ' notebookGuid=' . $notebookGuid, 2, 'index.php', 110);
 
@@ -493,6 +508,12 @@ switch ($cmd) {
                         }
                     }
                     $i++;
+                }
+
+                // delete the file to mark processing complete
+                if (file_exists($tmpFile)) {
+                    debug('webhook 1 - delete temp file for ' . $noteGuid, 2, 'index.php', 190);
+                    unlink($tmpFile);
                 }
 
                 break;
