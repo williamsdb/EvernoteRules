@@ -45,22 +45,21 @@ $smarty->setCacheDir('cache');
 $smarty->setConfigDir('configs');
 //$smarty->use_sub_folders = TRUE;
 
-// debug incoming request
-if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    debug('pre - fetch notebooks', 2, 'index.php', 20);
-}
 
 // load up the list of notebooks if this is not a webhook
 // and we have an oAuth token
 if (empty($_SESSION['notebooks']) && OAUTH != '') {
     if (!str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+        // debug incoming request
+        if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+            debug('pre - fetch notebooks', 2, 'index.php', 20);
+        }
         $_SESSION['notebooks'] = getNotebooks($smarty, FALSE);
+        // debug incoming request
+        if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
+            debug('pre - post fetch notebooks', 2, 'index.php', 30);
+        }
     }
-}
-
-// debug incoming request
-if (DEBUG == 2 && str_contains($_SERVER['REQUEST_URI'], 'webhook')) {
-    debug('pre - post fetch notebooks', 2, 'index.php', 30);
 }
 
 // get the existing rules
@@ -438,6 +437,45 @@ switch ($cmd) {
                 // debug incoming request
                 debug('webhook 1 - user=' . $userId . ' noteGuid=' . $noteGuid . ' notebookGuid=' . $notebookGuid, 2, 'index.php', 110);
 
+                // get the note details
+                try {
+                    // Initialize Evernote client
+                    $client = new \Evernote\Client(OAUTH, FALSE);
+                    $noteStore = $client->getAdvancedClient()->getNoteStore();
+
+                    // Retrieve note details
+                    $note = $client->getNote($noteGuid);
+                    $title = $note->title;
+                    debug('webhook 2 - title =' . $title, 2, 'index.php', 122);
+                    $author = $note->attributes->author;
+                    debug('webhook 2 - author =' . $author, 2, 'index.php', 124);
+
+                    // Get tags associated with the note
+                    $tags = $noteStore->getNoteTagNames($noteGuid);
+                    debug('webhook 2 - tags=' . implode(":", $tags), 2, 'index.php', 126);
+                } catch (\EDAM\Error\EDAMSystemException $e) {
+                    if ($e->errorCode === \EDAM\Error\EDAMErrorCode::RATE_LIMIT_REACHED) {
+                        $rateLimitDuration = $e->rateLimitDuration; // In seconds
+                        debug("Rate limit reached. Try again in {$rateLimitDuration} seconds.", 1, 'index.php', 132);
+                    } else {
+                        $errorCode = $e->getCode() ?? 'Unknown';
+                        $message = $e->getMessage() ?: 'No error message provided';
+                        debug("Evernote System Exception: Code $errorCode - $message", 1, 'index.php', 134);
+                    }
+                } catch (\EDAM\Error\EDAMNotFoundException $e) {
+                    $errorCode = $e->getCode() ?? 'Unknown';
+                    $message = $e->getMessage() ?: 'No error message provided';
+                    debug("Evernote Note Not Found: $errorCode - $message", 1, 'index.php', 140);
+                } catch (\EDAM\Error\EDAMUserException $e) {
+                    $errorCode = $e->getCode() ?? 'Unknown';
+                    $message = $e->getMessage() ?: 'No error message provided';
+                    debug("Evernote User Exception: $errorCode - $message", 1, 'index.php', 150);
+                } catch (Exception $e) {
+                    $errorCode = $e->getCode() ?? 'Unknown';
+                    $message = $e->getMessage() ?: 'No error message provided';
+                    debug("General Exception: $errorCode - $message", 1, 'index.php', 160);
+                }
+
                 // cycle through the rules finding any matches.
                 $i = 0;
                 while ($i <= count($_SESSION['rules']) - 1) {
@@ -446,48 +484,7 @@ switch ($cmd) {
                     ) {
 
                         // debug incoming request
-                        debug('webhook 2 - match', 2, 'index.php', 120);
-
-                        try {
-                            // Initialize Evernote client
-                            $client = new \Evernote\Client(OAUTH, FALSE);
-                            $noteStore = $client->getAdvancedClient()->getNoteStore();
-
-                            // Retrieve note details
-                            $note = $client->getNote($noteGuid);
-                            $title = $note->title;
-                            debug('webhook 2 - title =' . $title, 2, 'index.php', 122);
-                            $author = $note->attributes->author;
-                            debug('webhook 2 - author =' . $author, 2, 'index.php', 124);
-
-                            // Get tags associated with the note
-                            $tags = $noteStore->getNoteTagNames($noteGuid);
-                            debug('webhook 2 - tags=' . implode(":", $tags), 2, 'index.php', 126);
-                        } catch (\EDAM\Error\EDAMSystemException $e) {
-                            if ($e->errorCode === \EDAM\Error\EDAMErrorCode::RATE_LIMIT_REACHED) {
-                                $rateLimitDuration = $e->rateLimitDuration; // In seconds
-                                debug("Rate limit reached. Try again in {$rateLimitDuration} seconds.", 1, 'index.php', 132);
-                            } else {
-                                $errorCode = $e->getCode() ?? 'Unknown';
-                                $message = $e->getMessage() ?: 'No error message provided';
-                                debug("Evernote System Exception: Code $errorCode - $message", 1, 'index.php', 134);
-                            }
-                        } catch (\EDAM\Error\EDAMNotFoundException $e) {
-                            $errorCode = $e->getCode() ?? 'Unknown';
-                            $message = $e->getMessage() ?: 'No error message provided';
-                            debug("Evernote Note Not Found: $errorCode - $message", 1, 'index.php', 140);
-                        } catch (\EDAM\Error\EDAMUserException $e) {
-                            $errorCode = $e->getCode() ?? 'Unknown';
-                            $message = $e->getMessage() ?: 'No error message provided';
-                            debug("Evernote User Exception: $errorCode - $message", 1, 'index.php', 150);
-                        } catch (Exception $e) {
-                            $errorCode = $e->getCode() ?? 'Unknown';
-                            $message = $e->getMessage() ?: 'No error message provided';
-                            debug("General Exception: $errorCode - $message", 1, 'index.php', 160);
-                        }
-
-                        // debug incoming request
-                        debug('webhook 3 - title=' . $title . ' author=' . $author, 2, 'index.php', 170);
+                        debug('webhook 3 - match - processing ' . $i . ' of ' . count($_SESSION['rules']), 2, 'index.php', 120);
 
                         // does this note meet all the conditions?
                         $titleRes = checkTitleCondition($title,  $_SESSION['rules'][$i]['condition'], $_SESSION['rules'][$i]['conditionText']);
@@ -528,7 +525,7 @@ switch ($cmd) {
 
             // Update Business Notebook
             //[base URL]/?userId=[user ID]&notebookGuid=[notebook GUID]&reason=business_notebook_update
-            case 'business_notebook_create':
+            case 'business_notebook_update':
 
                 // not interested so discard
 
