@@ -14,9 +14,10 @@ function pushover($message, $token, $user)
             "user" => $user,
             "message" => $message,
         ),
+        CURLOPT_RETURNTRANSFER => true,
     ));
     curl_exec($ch);
-    curl_close($ch);
+    unset($ch);
 
     return;
 }
@@ -64,7 +65,7 @@ function getNotebooks($smarty, $webhook = TRUE)
             die;
         }
     } catch (EDAMUserException $e) {
-        if ($e->getCode() === EDAMErrorCode::AUTH_EXPIRED) {
+        if ($e->getCode() === EDAMErrorCode::AUTH_EXPIRED || $e->getCode() === 9) {
             if ($webhook) {
                 debug('getNotebooks - Token has expired.', 1, 'getNotebooks', 20);
             } else {
@@ -132,7 +133,7 @@ function getTags($client)
         $tags = $client->listTags();
     } catch (EDAMUserException $e) {
 
-        if ($e->getCode() === EDAMErrorCode::AUTH_EXPIRED) {
+        if ($e->getCode() === EDAMErrorCode::AUTH_EXPIRED || $e->getCode() === 9) {
             if ($webhook) {
                 debug('Token has expired. getTags 1', 1, 'getTags', 10);
             } else {
@@ -651,4 +652,52 @@ function array_to_html($val, $var = FALSE)
     }
 
     return $out;
+}
+
+function getEvernoteTokenExpiry($token)
+{
+    if (preg_match('/E=([0-9a-f]+)/', $token, $matches)) {
+        $ms = hexdec($matches[1]);
+        return (int)($ms / 1000); // return as Unix timestamp (seconds)
+    }
+    return null;
+}
+
+function checkEvernoteToken($token, $warningDays = 7)
+{
+    $expiry = getEvernoteTokenExpiry($token);
+
+    if (!$expiry) {
+        return [
+            'status' => 'invalid',
+            'message' => 'Could not parse token expiry'
+        ];
+    }
+
+    $now = time();
+    $daysLeft = ($expiry - $now) / 86400;
+
+    if ($expiry < $now) {
+        return [
+            'status' => 'expired',
+            'message' => 'Token has expired',
+            'expiry_date' => date('Y-m-d H:i:s', $expiry)
+        ];
+    }
+
+    if ($daysLeft <= $warningDays) {
+        return [
+            'status' => 'warning',
+            'message' => 'Token expiring soon',
+            'days_left' => floor($daysLeft),
+            'expiry_date' => date('Y-m-d H:i:s', $expiry)
+        ];
+    }
+
+    return [
+        'status' => 'ok',
+        'message' => 'Token is valid',
+        'days_left' => floor($daysLeft),
+        'expiry_date' => date('Y-m-d H:i:s', $expiry)
+    ];
 }
