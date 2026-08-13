@@ -28,6 +28,8 @@
         <input type="radio" id="pushover" name="option" value="pushover" {if $option == 'pushover'}checked{/if}>Send a notification to Pushover
     {/if}
     <br>
+    <input type="radio" id="rtm" name="option" value="rtm" {if $option == 'rtm'}checked{/if}>Send to Remember The Milk
+    <br>
     <input type="radio" id="delete" name="option" value="delete" {if $option == 'delete'}checked{/if}>Delete the note
 
     <p><input type="submit" value="Update action"></p>

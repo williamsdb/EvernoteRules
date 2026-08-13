@@ -99,6 +99,8 @@
             <td>Add tags</td>
         {elseif {$actions[act].option} == 'pushover'}
             <td>Send a Pushover notification</td>
+        {elseif {$actions[act].option} == 'rtm'}
+            <td>Send to Remember The Milk</td>
         {elseif {$actions[act].option} == 'delete'}
             <td>Delete the note</td>
         {/if}
