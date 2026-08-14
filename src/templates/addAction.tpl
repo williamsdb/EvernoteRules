@@ -24,7 +24,7 @@
         <input type="radio" id="pushover" name="option" value="pushover">Send a notification to Pushover
     {/if}
     <br>
-    <input type="radio" id="rtm" name="option" value="rtm">Send to Remember The Milk
+    <input type="radio" id="reminder" name="option" value="reminder">Set a Reminder
     <br>
     <input type="radio" id="delete" name="option" value="delete">Delete the note
 

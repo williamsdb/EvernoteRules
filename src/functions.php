@@ -65,6 +65,7 @@ function rtm(string $message)
     }
 
     $timeline = $timelineData['rsp']['timeline'];
+    print_r($timelineData);
     echo "Timeline created: {$timeline}\n";
 
     // Create the Task
@@ -532,6 +533,33 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
                 debug('process - rtm', 2, 'processActions', 255);
 
                 return rtm($title);
+                break;
+
+            // set reminder for tomorrow at 8am
+            case 'reminder':
+
+                // debug incoming request
+                debug('process - reminder', 2, 'processActions', 255);
+
+                try {
+                    $tomorrow8am = mktime(8, 0, 0, (int)date('n'), (int)date('j') + 1, (int)date('Y'));
+
+                    $ret = $client->getNote($noteGuid);
+                    $edamNote = $ret->getEdamNote();
+
+                    if (!$edamNote->attributes) {
+                        $edamNote->attributes = new \EDAM\Types\NoteAttributes();
+                    }
+                    $edamNote->attributes->reminderTime = $tomorrow8am * 1000; // Evernote uses milliseconds
+
+                    $noteStore = $client->getAdvancedClient()->getNoteStore();
+                    $noteStore->updateNote(OAUTH, $edamNote);
+
+                    debug("Reminder set for tomorrow at 8am.", 2, 'processActions', 257);
+                } catch (Exception $e) {
+                    debug('Error setting reminder: ' . $e->getMessage(), 1, 'processActions', 258);
+                }
+
                 break;
 
             // delete the note
