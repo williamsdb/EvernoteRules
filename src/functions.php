@@ -22,70 +22,6 @@ function pushover($message, $token, $user)
     return;
 }
 
-/**
- * Helper function to generate RTM's required api_sig MD5 hash.
- * RTM expects: MD5(api_secret + sorted_key_value_pairs)
- */
-function generateRtmSignature(array $params, string $secret): string
-{
-    ksort($params);
-    $str = $secret;
-    foreach ($params as $key => $val) {
-        $str .= $key . $val;
-    }
-    return md5($str);
-}
-
-/**
- * Helper to make signed REST GET requests to RTM.
- */
-function callRtmApi(string $method, array $params, string $secret): array
-{
-    $params['method'] = $method;
-    $params['format'] = 'json';
-    $params['api_sig'] = generateRtmSignature($params, $secret);
-
-    $url = 'https://api.rememberthemilk.com/services/rest/?' . http_build_query($params);
-
-    $response = file_get_contents($url);
-    return json_decode($response, true);
-}
-
-function rtm(string $message)
-{
-
-    // Request a Timeline ID
-    $timelineData = callRtmApi('rtm.timelines.create', [
-        'api_key'    => RTM_API_KEY,
-        'auth_token' => RTM_AUTH_TOKEN,
-    ], RTM_API_SECRET);
-
-    if (!isset($timelineData['rsp']['timeline'])) {
-        debug("Failed to create timeline: " . json_encode($timelineData), 1, 'rtm', 10);
-    }
-
-    $timeline = $timelineData['rsp']['timeline'];
-    print_r($timelineData);
-    echo "Timeline created: {$timeline}\n";
-
-    // Create the Task
-    $taskData = callRtmApi('rtm.tasks.add', [
-        'api_key'    => RTM_API_KEY,
-        'auth_token' => RTM_AUTH_TOKEN,
-        'timeline'  => $timeline,
-        'name'      => $message,
-        'parse'     => '1',
-    ], RTM_API_SECRET);
-
-    if ($taskData['rsp']['stat'] === 'ok') {
-        debug("Task '{$message}' created successfully!", 1, 'rtm', 20);
-    } else {
-        debug("Error creating task: " . json_encode($taskData), 1, 'rtm', 30);
-    }
-
-    return;
-}
-
 function write_oauth_key($oauth, $file)
 {
 
@@ -511,7 +447,7 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
 
                     debug("Note updated successfully! New tags: " . $actions[$i]['tags'], 2, 'processActions', 220);
                 } catch (Exception $e) {
-                    debug('Error updating note: ',  $e->getMessage(), 2, 'processActions', 230);
+                    debug('Error updating note: ' . $e->getMessage(), 2, 'processActions', 230);
                     debug('process - tags An error occurred updating note: ' . $e->getMessage(), 2, 'processActions', 240);
                 }
 
@@ -523,23 +459,14 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
                 // debug incoming request
                 debug('process - pushover', 2, 'processActions', 250);
 
-                return pushover('Rule ' . $ruleName . ' has just been triggered', PUSHOVER_TOKEN, PUSHOVER_USER);
-                break;
-
-            // send to Remember The Milk
-            case 'rtm':
-
-                // debug incoming request
-                debug('process - rtm', 2, 'processActions', 255);
-
-                return rtm($title);
+                pushover('Rule ' . $ruleName . ' has just been triggered', PUSHOVER_TOKEN, PUSHOVER_USER);
                 break;
 
             // set reminder for tomorrow at 8am
             case 'reminder':
 
                 // debug incoming request
-                debug('process - reminder', 2, 'processActions', 255);
+                debug('process - reminder', 2, 'processActions', 256);
 
                 try {
                     $tomorrow8am = mktime(8, 0, 0, (int)date('n'), (int)date('j') + 1, (int)date('Y'));
@@ -584,7 +511,7 @@ function processActions($actions, $ruleName, $title, $client, $note, $noteStore,
 }
 
 // log calls
-function debug($string, $level = 1, $function = '', $pos = 0)
+function debug(string $string, $level = 1, $function = '', $pos = 0)
 {
     if (DEBUG == 0) return;
 

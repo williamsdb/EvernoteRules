@@ -586,10 +586,6 @@ switch ($cmd) {
         $smarty->display('user.tpl');
         break;
 
-    case 'rtm':
-        rtm('hello from EvernoteRules');
-        break;
-
     case '':
         $smarty->assign('oauth', OAUTH);
         $smarty->assign('rules', $_SESSION['rules']);

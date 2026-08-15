@@ -14,11 +14,6 @@ define("USER", "");
 define("PUSHOVER_TOKEN", "");
 define("PUSHOVER_USER", "");
 
-// Remember The Milk keys - leave blank if not using
-define("RTM_API_KEY", "");
-define("RTM_API_SECRET", "");
-define("RTM_AUTH_TOKEN", "");
-
 // Log level
 // 0 - off
 // 1 - write errors to log file
